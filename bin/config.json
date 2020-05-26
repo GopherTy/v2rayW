@@ -1,0 +1,22 @@
+{
+    "DB": {
+        "Driver": "mysql",
+        "Source": "gopherty:a951753.@tcp(ty.gopherty.info:3306)/gopherty?charset=utf8",
+        "ShowSQL": true,
+        "MaxOpenConns": 100,
+        "MaxIdleConns": 5,
+        "Cached": 200
+    },
+    "HTTP": {
+        "TLS": false,
+        "Address": ":8080",
+        "CertFile": "",
+        "KeyFile": ""
+    },
+    "Logger": {
+        "Level": "debug",
+        "Encoding": "console",
+        "Development": false,
+        "OutputLogs": true
+    }
+}
