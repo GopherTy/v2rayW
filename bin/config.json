@@ -1,7 +1,7 @@
 {
     "DB": {
         "Driver": "mysql",
-        "Source": "gopherty:a951753.@tcp(ty.gopherty.info:3306)/gopherty?charset=utf8",
+        "Source": "[name]:[passwd]@tcp([url]:[port])/gopherty?charset=utf8",
         "ShowSQL": true,
         "MaxOpenConns": 100,
         "MaxIdleConns": 5,
