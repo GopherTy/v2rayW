@@ -18,3 +18,5 @@ vendor/
 # 自定义
 bin/v2ray-web*
 bin/log
+bin/v2ray.json
+.vscode
