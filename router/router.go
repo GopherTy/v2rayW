@@ -20,5 +20,5 @@ func (Router) Route(engine *gin.Engine) {
 
 	// v2ray功能实现
 	group := engine.Group("/v2ray")
-	group.GET("/start", ctl.Start)
+	group.GET("/start", ctl.V2rayDispathcer.Start)
 }
