@@ -28,6 +28,11 @@ type Dispatcher struct {
 
 // Start 启动 v2ray 服务
 func (Dispatcher) Start(c *gin.Context) {
+	if v2rayInstance != nil {
+		c.String(http.StatusInternalServerError, "服务已启动")
+		return
+	}
+
 	// 暂定 v2ray 配置文件名称和位置硬编码，因为是通过 web-ui 来对配置文件进行操作。
 	path := utils.BasePath() + "/v2ray.json"
 
@@ -49,24 +54,44 @@ func (Dispatcher) Start(c *gin.Context) {
 	config, err := core.LoadConfig("json", "v2ray.json", file)
 	if err != nil {
 		logger.Logger().Error(err.Error())
+		c.String(http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	// 创建 v2ray 实例
 	instance, err := core.New(config)
 	if err != nil {
 		logger.Logger().Error(err.Error())
+		c.String(http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	err = instance.Start()
 	if err != nil {
 		logger.Logger().Error(err.Error())
+		c.String(http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	v2rayInstance = instance // 保存实例，用于关闭。
-	c.String(http.StatusOK, "success")
+	c.String(http.StatusOK, "服务启动成功")
 }
 
 // Stop 关闭 v2ray 服务
 func (Dispatcher) Stop(c *gin.Context) {
+	if v2rayInstance == nil {
+		c.String(http.StatusInternalServerError, "服务未启动")
+		return
+	}
 
+	err := v2rayInstance.Close()
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// 释放全局资源
+	v2rayInstance = nil
+	c.String(http.StatusOK, "服务关闭成功")
 }
