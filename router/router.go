@@ -16,7 +16,7 @@ func (Router) Route(engine *gin.Engine) {
 	var ctl control.Controller
 
 	// 非用户组
-	engine.GET("/", ctl.Test) // 测试接口注册
+	engine.GET("/", ctl.TestDispathce.Test) // 测试接口注册
 
 	// v2ray功能实现
 	group := engine.Group("/v2ray")
