@@ -6,9 +6,9 @@ import (
 
 // UserLoginLog  用户登录系统日志表
 type UserLoginLog struct {
-	ID        int64 `xorm:"pk autoincr 'id'"`
-	UID       int64 `xorm:"'user_id'"`
-	ClientIP  string
+	ID        int64     `xorm:"pk autoincr 'id'"`
+	UID       int64     `xorm:"'user_id'"`
+	ClientIP  string    `xorm:"'client_ip'"`
 	LoginTime time.Time `xorm:"created 'login_time'"`
 }
 

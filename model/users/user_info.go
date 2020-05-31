@@ -6,13 +6,12 @@ import (
 
 // UserInfo 用户信息表
 type UserInfo struct {
-	ID       int64  `xorm:"pk autoincr 'id'"`
-	UID      int64  `xorm:"'user_id'"`
-	NickName string `xorm:"varchar(100) 'nickname'"`
-	Age      int
-	Phone    int
-	Email    string
-	Address  string
+	ID       int64     `xorm:"pk autoincr 'id'"`
+	UID      int64     `xorm:"'user_id'"`
+	NickName string    `xorm:"varchar(100) 'nickname'"`
+	Age      int       `xorm:"'age'"`
+	Phone    int       `xorm:"'phone'"`
+	Address  string    `xorm:"'address'"`
 	Updated  time.Time `xorm:"updated 'last_update_time'"`
 }
 

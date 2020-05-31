@@ -7,6 +7,7 @@ type User struct {
 	ID       int64     `xorm:"pk autoincr 'id'"`
 	UserName string    `xorm:"varchar(16) 'user_name'"`
 	Passwd   string    `xorm:"varchar(18) 'passwd'"`
+	Email    string    `xorm:"'email'"`
 	Created  time.Time `xorm:"created"`
 	Updated  time.Time `xorm:"updated"`
 }

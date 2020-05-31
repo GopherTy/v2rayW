@@ -9,9 +9,18 @@ import (
 	"github.com/gopherty/v2ray-web/model/users"
 )
 
+var (
+	userEnable bool
+)
+
 // UserManage 用户管理
 func UserManage() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// 暂时使用这种方式来使用中间件
+		if userEnable {
+			return
+		}
+
 		db := db.Engine()
 
 		exists, err := db.IsTableExist(&users.User{})
@@ -43,6 +52,7 @@ func UserManage() gin.HandlerFunc {
 		db.Sync2(&users.User{}, &users.UserInfo{}, &users.UserLoginLog{})
 		c.Next()
 
+		userEnable = true
 		//after 在中间件调用了处理函数之后，就会在此处调用
 		logger.Logger().Info("Enable user middleware")
 	}
