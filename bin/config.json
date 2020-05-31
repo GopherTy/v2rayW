@@ -9,7 +9,7 @@
     },
     "HTTP": {
         "TLS": false,
-        "Address": ":8080",
+        "Address": ":9200",
         "CertFile": "",
         "KeyFile": ""
     },
