@@ -28,13 +28,13 @@ func (Register) Regist() {
 		if !utils.IsFileOrDirExists(path) {
 			err := os.Mkdir(path, os.ModePerm)
 			if err != nil {
-				fmt.Sprintln("Create logs fail: ", err)
+				fmt.Println("Create logs fail: ", err)
 				os.Exit(1)
 			}
 		}
 		_, err := os.Create(path + "/web-server.log")
 		if err != nil {
-			fmt.Sprintln("Create logs fail: ", err)
+			fmt.Println("Create logs fail: ", err)
 			os.Exit(1)
 		}
 
@@ -90,7 +90,7 @@ func (Register) Regist() {
 	// 创建自定义日志对象
 	zapLogger, err := zapCfg.Build()
 	if err != nil {
-		fmt.Sprintln("Init logger fail: ", err)
+		fmt.Println("Init logger fail: ", err)
 		os.Exit(1)
 	}
 	defer zapLogger.Sync()

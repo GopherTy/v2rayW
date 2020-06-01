@@ -2,7 +2,6 @@ package router
 
 import (
 	"github.com/gopherty/v2ray-web/control"
-	"github.com/gopherty/v2ray-web/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,7 +21,6 @@ func (Router) Route(engine *gin.Engine) {
 	// 组
 	// user
 	userGroup := engine.Group("/user")
-	userGroup.Use(middleware.UserManage()) // 用户中间件
 
 	userGroup.POST("/join", ctl.SignDispacher.Join)    // 用户注册
 	userGroup.POST("/login", ctl.SignDispacher.Login)  // 用户登陆

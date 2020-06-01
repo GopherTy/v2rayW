@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"io"
 	"os"
 
@@ -21,6 +22,11 @@ func init() {
 
 // 项目入口
 func main() {
+	// 配置项目是否为稳定版
+	var releaseMode bool
+	flag.BoolVar(&releaseMode, "r", false, "set application mode to  release or debug,default is debug")
+	flag.Parse()
+
 	// 配置对象
 	cfg := config.Configure()
 	path := utils.BasePath() + "/"
@@ -39,6 +45,10 @@ func main() {
 	// 路由功能注册
 	var r router.Router
 	r.Route(engine)
+
+	if releaseMode {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
 	// 验证服务器是否以HTTPS的方式启动
 	if cfg.HTTP.TLS {

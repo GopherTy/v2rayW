@@ -1,6 +1,7 @@
 package initialization
 
 import (
+	"github.com/gopherty/v2ray-web/config"
 	"github.com/gopherty/v2ray-web/db"
 	"github.com/gopherty/v2ray-web/logger"
 )
@@ -14,6 +15,7 @@ type IRegister interface {
 func Init() {
 	// 调用执行注册器
 	registers := []IRegister{
+		config.Register{}, // 配置
 		logger.Register{}, // 日志
 		db.Register{},     // 数据库
 	}

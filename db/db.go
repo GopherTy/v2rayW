@@ -3,6 +3,8 @@ package db
 import (
 	"github.com/gopherty/v2ray-web/config"
 	"github.com/gopherty/v2ray-web/logger"
+	"github.com/gopherty/v2ray-web/model/auth"
+	"github.com/gopherty/v2ray-web/model/users"
 
 	"github.com/go-xorm/xorm"
 )
@@ -49,6 +51,52 @@ func (Register) Regist() {
 
 	db = engine
 	logger.Logger().Info("Init db success")
+
+	// 是否关闭用户管理
+	if cfg.DB.UserManageDisable {
+		return
+	}
+
+	// 用户表
+	exists, err := db.IsTableExist(&users.User{})
+	if err != nil {
+		logger.Logger().Fatal(err.Error())
+	}
+	if !exists {
+		db.CreateTables(&users.User{})
+	}
+	exists, err = db.IsTableExist(&users.UserInfo{})
+	if err != nil {
+		logger.Logger().Fatal(err.Error())
+	}
+	if !exists {
+		db.CreateTables(&users.UserInfo{})
+	}
+	exists, err = db.IsTableExist(&users.UserLoginLog{})
+	if err != nil {
+		logger.Logger().Fatal(err.Error())
+	}
+	if !exists {
+		db.CreateTables(&users.UserLoginLog{})
+	}
+	db.Sync2(&users.User{}, &users.UserInfo{}, &users.UserLoginLog{})
+
+	// 用户权限表
+	exists, err = db.IsTableExist(&auth.Role{})
+	if err != nil {
+		logger.Logger().Fatal(err.Error())
+	}
+	if !exists {
+		db.CreateTables(&auth.Role{})
+	}
+	exists, err = db.IsTableExist(&auth.Auth{})
+	if err != nil {
+		logger.Logger().Fatal(err.Error())
+	}
+	if !exists {
+		db.CreateTables(&auth.Auth{})
+	}
+	db.Sync2(&auth.Role{}, &auth.Auth{})
 }
 
 // Engine 获取 db 对象
