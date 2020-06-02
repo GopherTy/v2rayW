@@ -43,7 +43,8 @@ type Logger struct {
 	Level       string // 日志等级：日志等级: debug,info,warn,error,dpanic,panic,fatal
 	Development bool   // 是否开启开发模式
 	Encoding    string // 日志输出格式
-	OutputLogs  bool   // 是否输出日志文件
+	AppLogsPath string // 日志文件输出位置
+	GinLogsPath string // gin框架日志输出位置
 }
 
 // config  单例全局配置对象
@@ -64,13 +65,13 @@ func (Register) Regist() {
 		os.Exit(1)
 	}
 
-	var cfg *Config
-	err = json.Unmarshal(b, cfg)
+	var cnf Config
+	err = json.Unmarshal(b, &cnf)
 	if err != nil {
 		fmt.Println("Json parse config object fail: ", err)
 		os.Exit(1)
 	}
-	config = cfg
+	config = &cnf
 }
 
 // Configure 获取配置对象

@@ -19,26 +19,25 @@ type Register struct {
 
 // Regist 实现 IRegister 接口，以注册获取初始化好的 logger 对象。
 func (Register) Regist() {
-	cfg := config.Configure()
+	cnf := config.Configure()
 
 	// 是否输出日志文件
 	var logPath []string
-	if cfg.Logger.OutputLogs {
-		path := utils.BasePath() + "/log"
-		if !utils.IsFileOrDirExists(path) {
-			err := os.Mkdir(path, os.ModePerm)
-			if err != nil {
-				fmt.Println("Create logs fail: ", err)
-				os.Exit(1)
-			}
-		}
-		_, err := os.Create(path + "/web-server.log")
+	if cnf.Logger.AppLogsPath != "" {
+		// 创建指定路径
+		err := utils.CreatePath(cnf.Logger.AppLogsPath)
 		if err != nil {
-			fmt.Println("Create logs fail: ", err)
+			fmt.Println("Init logger fail: ", err)
 			os.Exit(1)
 		}
 
-		logPath = []string{"stdout", path + "/web-server.log"}
+		_, err = os.Create(cnf.Logger.AppLogsPath)
+		if err != nil {
+			fmt.Println("Init logger fail: ", err)
+			os.Exit(1)
+		}
+
+		logPath = []string{"stdout", cnf.Logger.AppLogsPath}
 	} else {
 		logPath = []string{"stdout"}
 	}
@@ -57,7 +56,7 @@ func (Register) Regist() {
 	}
 
 	// 用户日志等级 debug,info,warn,error,dpanic,panic,fatal
-	level := strings.TrimSpace(cfg.Logger.Level)
+	level := strings.TrimSpace(cnf.Logger.Level)
 	level = strings.ToLower(level)
 	var zapLevel zapcore.Level
 	switch level {
@@ -78,17 +77,17 @@ func (Register) Regist() {
 	}
 
 	atomicLevel := zap.NewAtomicLevelAt(zapLevel)
-	zapCfg := zap.Config{
+	zapcnf := zap.Config{
 		Level:            atomicLevel,
-		Development:      cfg.Logger.Development,
-		Encoding:         cfg.Logger.Encoding, // json 或 console
+		Development:      cnf.Logger.Development,
+		Encoding:         cnf.Logger.Encoding, // json 或 console
 		OutputPaths:      logPath,
 		ErrorOutputPaths: []string{"stderr"},
 		EncoderConfig:    encoderConfig,
 	}
 
 	// 创建自定义日志对象
-	zapLogger, err := zapCfg.Build()
+	zapLogger, err := zapcnf.Build()
 	if err != nil {
 		fmt.Println("Init logger fail: ", err)
 		os.Exit(1)

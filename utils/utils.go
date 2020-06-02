@@ -42,7 +42,6 @@ func IsDir(src string) bool {
 
 // BasePath  获取项目的绝对路径
 func BasePath() (basePath string) {
-	// 获取项目绝对路径，读取配置文件。
 	path, err := exec.LookPath(os.Args[0])
 	if err != nil {
 		log.Fatalln(err)
@@ -52,6 +51,29 @@ func BasePath() (basePath string) {
 		log.Fatalln(err)
 	}
 	basePath = filepath.Dir(path)
+	return
+}
+
+// CreatePath 根据指定路径创建，若存在就不做任何操作。
+func CreatePath(path string) (err error) {
+	if path == "" {
+		return
+	}
+
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return
+	}
+
+	absPath = filepath.Dir(absPath)
+	if IsFileOrDirExists(absPath) {
+		return
+	}
+
+	err = os.Mkdir(absPath, os.ModePerm)
+	if err != nil {
+		return
+	}
 
 	return
 }
