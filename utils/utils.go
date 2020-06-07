@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"log"
 	"os"
 	"os/exec"
@@ -73,6 +75,17 @@ func CreatePath(path string) (err error) {
 	err = os.Mkdir(absPath, os.ModePerm)
 	if err != nil {
 		return
+	}
+
+	return
+}
+
+// MD5 md5加密
+func MD5(src interface{}) (dst string) {
+	if v, ok := src.(string); ok {
+		hash := md5.New()
+		hash.Write([]byte(v))
+		dst = hex.EncodeToString(hash.Sum(nil))
 	}
 
 	return
