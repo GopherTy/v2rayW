@@ -24,7 +24,47 @@ type Dispatcher struct {
 
 // Join 用户注册
 func (Dispatcher) Join(c *gin.Context) {
+	// 绑定参数
+	var param ParamJoin
+	err := c.ShouldBindWith(&param, binding.Default(c.Request.Method, c.ContentType()))
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusOK, gin.H{
+			"code":  serve.StatusOK,
+			"desc":  "前端请求参数和后端绑定参数不匹配",
+			"error": err.Error(),
+			"data":  gin.H{},
+		})
+		return
+	}
 
+	engine := db.Engine()
+	_, err = engine.Insert(&users.User{
+		UserName: param.UserName,
+		Passwd:   param.Password,
+		Email:    param.Email,
+	})
+
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":  serve.StatusDBServerError,
+			"desc":  "服务器内部错误",
+			"error": err.Error(),
+			"data":  gin.H{},
+		})
+		return
+	}
+
+	// 注册成功
+	c.JSON(http.StatusOK, gin.H{
+		"code":  serve.StatusOK,
+		"desc":  "",
+		"error": "",
+		"data": gin.H{
+			"msg": "注册成功",
+		},
+	})
 }
 
 // Login 用户登陆
@@ -34,8 +74,8 @@ func (Dispatcher) Login(c *gin.Context) {
 	err := c.ShouldBindWith(&param, binding.Default(c.Request.Method, c.ContentType()))
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":  serve.StatusServerError,
+		c.JSON(http.StatusOK, gin.H{
+			"code":  serve.StatusOK,
 			"desc":  "",
 			"error": err.Error(),
 			"data":  gin.H{},
