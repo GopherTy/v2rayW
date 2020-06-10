@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gopherty/v2ray-web/token"
+
 	"github.com/gopherty/v2ray-web/db"
 	"github.com/gopherty/v2ray-web/model/users"
 	"github.com/gopherty/v2ray-web/serve"
@@ -115,6 +117,12 @@ func (Dispatcher) Login(c *gin.Context) {
 		return
 	}
 
+	var t token.Token
+	tokenStr, err := t.CreateToken(user.ID)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+	}
+
 	// 登陆成功后给服务器设置 cookie
 	c.SetCookie("v2ray-web", V2RAYWEB, 0, "/", "test.cn", false, true)
 	c.JSON(http.StatusOK, gin.H{
@@ -122,7 +130,8 @@ func (Dispatcher) Login(c *gin.Context) {
 		"desc":  "",
 		"error": "",
 		"data": gin.H{
-			"msg": "登陆成功",
+			"msg":   "登陆成功",
+			"token": tokenStr,
 		},
 	})
 }
