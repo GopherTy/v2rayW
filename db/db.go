@@ -6,10 +6,14 @@ import (
 	"github.com/gopherty/v2ray-web/model/auth"
 	"github.com/gopherty/v2ray-web/model/users"
 
+	"github.com/go-redis/redis/v7"
 	"github.com/go-xorm/xorm"
 )
 
-var db *xorm.Engine
+var (
+	db     *xorm.Engine
+	client *redis.Client
+)
 
 // Register 数据库注册器
 type Register struct {
@@ -17,6 +21,9 @@ type Register struct {
 
 // Regist 实现 IRegister 接口，以注册获取初始化好的 db 对象。
 func (Register) Regist() {
+	initRedis() // 初始化 redis
+
+	var err error
 	cnf := config.Configure()
 
 	// 初始化日志对象
@@ -25,29 +32,28 @@ func (Register) Regist() {
 		logger.Logger().Fatal("Please configure database dirver or source")
 	}
 
-	engine, err := xorm.NewEngine(cnf.DB.Driver, cnf.DB.Source)
+	db, err = xorm.NewEngine(cnf.DB.Driver, cnf.DB.Source)
 	if err != nil {
 		logger.Logger().Fatal(err.Error())
 	}
 
 	// 设置数据库最大连接数和空闲数
-	engine.SetMaxOpenConns(cnf.DB.MaxOpenConns)
-	engine.SetMaxIdleConns(cnf.DB.MaxIdleConns)
+	db.SetMaxOpenConns(cnf.DB.MaxOpenConns)
+	db.SetMaxIdleConns(cnf.DB.MaxIdleConns)
 
 	// 是否开启 SQL 日志
 	if cnf.DB.ShowSQL {
-		engine.ShowSQL(true)
+		db.ShowSQL(true)
 	}
 
 	if cnf.DB.Cached != 0 {
 		cacher := xorm.NewLRUCacher(xorm.NewMemoryStore(), cnf.DB.Cached)
-		engine.SetDefaultCacher(cacher)
+		db.SetDefaultCacher(cacher)
 	}
 
-	db = engine
 	logger.Logger().Info("Init db success")
 
-	err = engine.Ping()
+	err = db.Ping()
 	if err != nil {
 		logger.Logger().Fatal(err.Error())
 	}
@@ -97,6 +103,26 @@ func (Register) Regist() {
 		db.CreateTables(&auth.Auth{})
 	}
 	db.Sync2(&auth.Role{}, &auth.Auth{})
+}
+
+// initRedis 注册 redis .
+func initRedis() {
+	cnf := config.Configure()
+
+	client = redis.NewClient(&redis.Options{
+		Addr: cnf.Redis.Address,
+	})
+
+	_, err := client.Ping().Result()
+	if err != nil {
+		logger.Logger().Fatal(err.Error())
+	}
+	logger.Logger().Info("Init redis success")
+}
+
+// Client 获取 redis 客户端对象
+func Client() *redis.Client {
+	return client
 }
 
 // Engine 获取 db 对象

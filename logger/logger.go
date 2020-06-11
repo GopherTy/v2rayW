@@ -86,15 +86,15 @@ func (Register) Regist() {
 		EncoderConfig:    encoderConfig,
 	}
 
+	var err error
 	// 创建自定义日志对象
-	zapLogger, err := zapcnf.Build()
+	logger, err = zapcnf.Build()
 	if err != nil {
 		fmt.Println("Init logger fail: ", err)
 		os.Exit(1)
 	}
-	defer zapLogger.Sync()
+	defer logger.Sync()
 
-	logger = zapLogger
 	logger.Info("Init logger success")
 }
 

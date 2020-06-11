@@ -14,6 +14,7 @@ type Config struct {
 	DB     DataBase // 配置文件数据库对象
 	HTTP   HTTP     // HTTP 协议配置对象
 	Logger Logger   // Logger 配置对象
+	Redis  Redis    // Redis 配置对象
 }
 
 // HTTP HTTP协议配置对象
@@ -36,6 +37,11 @@ type DataBase struct {
 
 	Cached            int  // 缓存大小
 	UserManageDisable bool //是否开启用户管理
+}
+
+// Redis redis 配置
+type Redis struct {
+	Address string // redis 连接地址
 }
 
 // Logger 日志对象

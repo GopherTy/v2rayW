@@ -117,21 +117,28 @@ func (Dispatcher) Login(c *gin.Context) {
 		return
 	}
 
-	var t token.Token
-	tokenStr, err := t.CreateToken(user.ID)
+	// 创建 token 和 auth
+	t, err := token.NewToken(user.ID)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+	}
+	err = token.CreateAuth(user.ID, t)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 	}
 
 	// 登陆成功后给服务器设置 cookie
-	c.SetCookie("v2ray-web", V2RAYWEB, 0, "/", "test.cn", false, true)
+	// c.SetCookie("v2ray-web", V2RAYWEB, 0, "/", "test.cn", false, true)
 	c.JSON(http.StatusOK, gin.H{
 		"code":  serve.StatusOK,
 		"desc":  "",
 		"error": "",
 		"data": gin.H{
-			"msg":   "登陆成功",
-			"token": tokenStr,
+			"msg": "登陆成功",
+			"token": gin.H{
+				"access_token":  t.AccessToken,
+				"refresh_token": t.RefreshToken,
+			},
 		},
 	})
 }

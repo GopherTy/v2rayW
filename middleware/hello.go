@@ -6,7 +6,7 @@ import (
 )
 
 // HelloMiddleware middleware defined
-func HelloMiddleware() func(*gin.Context) {
+func HelloMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// before use middleware
 		logger.Logger().Info("before ...")
