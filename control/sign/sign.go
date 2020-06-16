@@ -15,11 +15,6 @@ import (
 	"github.com/gopherty/v2ray-web/logger"
 )
 
-const (
-	// V2RAYWEB cookie test value
-	V2RAYWEB = "v2ray"
-)
-
 // Dispatcher 登陆控制器
 type Dispatcher struct {
 }
@@ -35,6 +30,7 @@ func (Dispatcher) Join(c *gin.Context) {
 			"code":  serve.StatusOK,
 			"desc":  "前端请求参数和后端绑定参数不匹配",
 			"error": err.Error(),
+			"token": "",
 			"data":  gin.H{},
 		})
 		return
@@ -53,6 +49,7 @@ func (Dispatcher) Join(c *gin.Context) {
 			"code":  serve.StatusDBServerError,
 			"desc":  "服务器内部错误",
 			"error": err.Error(),
+			"token": "",
 			"data":  gin.H{},
 		})
 		return
@@ -63,6 +60,7 @@ func (Dispatcher) Join(c *gin.Context) {
 		"code":  serve.StatusOK,
 		"desc":  "",
 		"error": "",
+		"token": "",
 		"data": gin.H{
 			"msg": "注册成功",
 		},
@@ -80,6 +78,7 @@ func (Dispatcher) Login(c *gin.Context) {
 			"code":  serve.StatusOK,
 			"desc":  "",
 			"error": err.Error(),
+			"token": "",
 			"data":  gin.H{},
 		})
 		return
@@ -102,6 +101,7 @@ func (Dispatcher) Login(c *gin.Context) {
 			"code":  serve.StatusDBServerError,
 			"desc":  "",
 			"error": err.Error(),
+			"token": "",
 			"data":  gin.H{},
 		})
 		return
@@ -112,6 +112,7 @@ func (Dispatcher) Login(c *gin.Context) {
 			"code":  serve.StatusDBServerError,
 			"desc":  "用户名或密码不正确",
 			"error": "",
+			"token": "",
 			"data":  gin.H{},
 		})
 		return
@@ -133,12 +134,12 @@ func (Dispatcher) Login(c *gin.Context) {
 		"code":  serve.StatusOK,
 		"desc":  "",
 		"error": "",
+		"token": gin.H{
+			"access_token":  t.AccessToken,
+			"refresh_token": t.RefreshToken,
+		},
 		"data": gin.H{
 			"msg": "登陆成功",
-			"token": gin.H{
-				"access_token":  t.AccessToken,
-				"refresh_token": t.RefreshToken,
-			},
 		},
 	})
 }
