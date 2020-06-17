@@ -23,12 +23,12 @@ func (Router) Route(engine *gin.Engine) {
 	// user
 	userGroup := engine.Group("/api/user")
 
-	userGroup.POST("/join", middleware.TokenAuthMiddleware(), ctl.SignDispacher.Join)    // 用户注册
+	userGroup.POST("/join", ctl.SignDispacher.Join)                                      // 用户注册
 	userGroup.POST("/login", ctl.SignDispacher.Login)                                    // 用户登陆
 	userGroup.GET("/logout", middleware.TokenAuthMiddleware(), ctl.SignDispacher.Logout) // 用户登出
 
 	// v2ray
 	v2rayGroup := engine.Group("/api/v2ray")
-	v2rayGroup.GET("/start", ctl.V2rayDispathcer.Start) // 启动
-	v2rayGroup.GET("/stop", ctl.V2rayDispathcer.Stop)   // 关闭
+	v2rayGroup.GET("/start", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Start) // 启动
+	v2rayGroup.GET("/stop", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Stop)   // 关闭
 }

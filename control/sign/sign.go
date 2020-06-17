@@ -146,5 +146,23 @@ func (Dispatcher) Login(c *gin.Context) {
 
 // Logout 用户登出
 func (Dispatcher) Logout(c *gin.Context) {
-
+	access, err := token.ExtractTokenMetadata(c.Request)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	deleted, err := token.DeleteAuth(access.AccessUUID)
+	if err != nil || deleted == 0 {
+		c.JSON(http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"code":  serve.StatusOK,
+		"desc":  "",
+		"error": "",
+		"token": "",
+		"data": gin.H{
+			"msg": "成功登出",
+		},
+	})
 }
