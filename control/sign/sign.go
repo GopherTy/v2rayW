@@ -74,7 +74,7 @@ func (Dispatcher) Login(c *gin.Context) {
 	err := c.ShouldBindWith(&param, binding.Default(c.Request.Method, c.ContentType()))
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusUnprocessableEntity, gin.H{
 			"code":  serve.StatusOK,
 			"desc":  "",
 			"error": err.Error(),

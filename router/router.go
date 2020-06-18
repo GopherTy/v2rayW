@@ -29,6 +29,6 @@ func (Router) Route(engine *gin.Engine) {
 
 	// v2ray
 	v2rayGroup := engine.Group("/api/v2ray")
-	v2rayGroup.GET("/start", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Start) // 启动
+	v2rayGroup.POST("/start", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Start) // 启动
 	v2rayGroup.GET("/stop", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Stop)   // 关闭
 }
