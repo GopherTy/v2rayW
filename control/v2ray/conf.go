@@ -90,22 +90,18 @@ type SystemPolicy struct {
 
 // Inbound 入站连接配置
 type Inbound struct {
-	Port           interface{}          `json:"port"`
-	Listen         string               `json:"listen"`
-	Protocol       string               `json:"protocol"`
-	Settings       InboundConfiguration `json:"settings"`
-	StreamSettings StreamSettings       `json:"streamSettings"`
-	Tag            string               `json:"tag"`
-	Sniffing       Sniffing             `json:"sniffing"`
-	Allocate       Allocate             `json:"allocate"`
+	Port     interface{} `json:"port"`
+	Listen   string      `json:"listen"`
+	Protocol string      `json:"protocol"`
+	Settings interface{} `json:"settings"`
+	// StreamSettings StreamSettings       `json:"streamSettings"`
+	// Tag            string               `json:"tag"`
+	Sniffing Sniffing `json:"sniffing"`
+	// Allocate Allocate `json:"allocate"`
 }
 
 // InboundConfiguration 入口配置
 type InboundConfiguration struct {
-	Client                    []Client `json:"clients"`
-	Default                   Default  `json:"default"`
-	Detour                    Detour   `json:"detour"`
-	DisableInsecureEncryption bool     `json:"disableInsecureEncryption"`
 }
 
 // Client 服务器认可的用户
@@ -129,21 +125,21 @@ type Detour struct {
 
 // StreamSettings  底层传输配置
 type StreamSettings struct {
-	NetWork      string    `json:"network"`
-	Security     string    `json:"security"`
-	WSSettings   WebSocket `json:"wsSettings"`
-	TLSSettings  string    `json:"tlsSettings"`
-	TCPSettings  string    `json:"tcpSettings"`
-	HTTPSettings string    `json:"httpSettings"`
-	DSSettings   string    `json:"dsSettings"`
-	QUICSettings string    `json:"quicSettings"`
-	Sockopt      string    `json:"sockopt"`
+	NetWork    string    `json:"network"`
+	Security   string    `json:"security"`
+	WSSettings WebSocket `json:"wsSettings"`
+	// TLSSettings  string    `json:"tlsSettings"`
+	// TCPSettings  string    `json:"tcpSettings"`
+	// HTTPSettings string    `json:"httpSettings"`
+	// DSSettings   string    `json:"dsSettings"`
+	// QUICSettings string    `json:"quicSettings"`
+	// Sockopt      string    `json:"sockopt"`
 }
 
 // WebSocket ws协议
 type WebSocket struct {
-	Path   string            `json:"path"`
-	Header map[string]string `json:"headers"`
+	Path string `json:"path"`
+	// Header map[string]string `json:"headers"`
 }
 
 // Sniffing 尝试探测流量的类型
@@ -161,18 +157,26 @@ type Allocate struct {
 
 // Outbound 出站连接配置
 type Outbound struct {
-	SendThrough    string
-	Protocol       string
-	Settings       OutboundConfiguration
-	Tag            string
-	StreamSettings StreamSettings
-	ProxySettings  ProxySetting
-	Mux            Mux
+	// SendThrough    string
+	// Tag            string `json:"tag"`
+	// ProxySettings  ProxySetting
+	Protocol       string                `json:"protocol"` // 默认 vmess 协议
+	Settings       OutboundConfiguration `json:"settings"`
+	StreamSettings StreamSettings        `json:"streamSettings"`
+	Mux            Mux                   `json:"mux"`
 }
 
 // OutboundConfiguration 出口配置
 type OutboundConfiguration struct {
-	Vnext Vmess
+	Vnext []interface{} `json:"vnext"`
+}
+
+// User 用户
+type User struct {
+	ID       string `json:"id"`
+	AlterID  int    `json:"alterId"`
+	Security string `json:"security"`
+	Level    int    `json:"level"`
 }
 
 // Vmess vmess 协议
@@ -182,19 +186,16 @@ type Vmess struct {
 	Users   []User `json:"users"`
 }
 
-// User 用户
-type User struct {
-	ID       string `json:"id"`
-	AlterID  int    `json:"alterId"`
-	Level    int    `json:"level"`
-	Security string `json:"security"`
-}
-
 // Freedom 出站协议，可以用来向任意网络发送（正常的） TCP 或 UDP 数据。
 type Freedom struct {
 	DomainStrategy string `json:"domainStrategy"`
 	Redirect       string `json:"redirect"`
 	UserLevel      int    `json:"userLevel"`
+}
+
+// Socks 协议
+type Socks struct {
+	Auth string `json:"auth"`
 }
 
 // ProxySetting 出站代理配置。
@@ -203,8 +204,8 @@ type ProxySetting struct {
 
 // Mux 配置
 type Mux struct {
-	Enabled     bool `json:"enabled"`
-	Concurrency int  `json:"concurrency"`
+	Enabled bool `json:"enabled"`
+	// Concurrency int  `json:"concurrency"`
 }
 
 // Reverse 反向代理配置。

@@ -2,7 +2,7 @@ package v2ray
 
 import (
 	"encoding/json"
-	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 
@@ -33,68 +33,8 @@ type Dispatcher struct {
 
 // Start 启动 v2ray 服务
 func (Dispatcher) Start(c *gin.Context) {
-	var err error
-	// 绑定参数
-	var param ParamStart
-	err = c.ShouldBindWith(&param, binding.Default(c.Request.Method, c.ContentType()))
-	if err != nil {
-		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
-			"code":  serve.StatusServerError,
-			"desc":  "",
-			"error": err.Error(),
-			"token": "",
-			"data":  gin.H{},
-		})
-		return
-	}
-
-	fmt.Println("param ----> ", param)
-
-	users := make([]User, 0)
-	user := User{
-		ID:       param.UserID,
-		AlterID:  param.AlertID,
-		Level:    param.Level,
-		Security: param.Security,
-	}
-	users = append(users, user)
-
-	vmess := OutboundConfiguration{
-		Vnext: Vmess{
-			Address: param.Address,
-			Port:    param.Port,
-			Users:   users,
-		},
-	}
-	outbounds := make([]Outbound, 0)
-	outbound := Outbound{
-		Protocol: "vmess",
-		Settings: vmess,
-		StreamSettings: StreamSettings{
-			NetWork:  param.Method,
-			Security: param.Security,
-			WSSettings: WebSocket{
-				Path: param.Path,
-			},
-		},
-		Mux: Mux{
-			Enabled: true,
-		},
-	}
-
-	outbounds = append(outbounds, outbound)
-	cnf := Config{
-		Outbounds: outbounds,
-	}
-
-	str, err := json.MarshalIndent(&cnf, "", "    ")
-	if err != nil {
-		return
-	}
-	fmt.Println(str)
-	return
-
+	// 将前端传过来的参数解析成 JSON 格式写入到文件中。
+	parmasToJSON(c)
 	if instance != nil {
 		err := instance.Start()
 		if err != nil {
@@ -120,7 +60,7 @@ func (Dispatcher) Start(c *gin.Context) {
 	}
 
 	// 暂定 v2ray 配置文件名称和位置硬编码，因为是通过 web-ui 来对配置文件进行操作。
-	path := utils.BasePath() + "/v2ray.json"
+	path := utils.BasePath() + "/test.json"
 
 	file, err := os.Open(path)
 	if err != nil {
@@ -232,4 +172,89 @@ func (Dispatcher) Stop(c *gin.Context) {
 			"msg": "服务关闭成功",
 		},
 	})
+}
+
+// parmasToJSON 将 v2ray 启动参数转化为配置文件
+func parmasToJSON(c *gin.Context) {
+	// 绑定参数
+	var param ParamStart
+	err := c.ShouldBindWith(&param, binding.Default(c.Request.Method, c.ContentType()))
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusUnprocessableEntity, gin.H{
+			"code":  serve.StatusServerError,
+			"desc":  "",
+			"error": err.Error(),
+			"token": "",
+			"data":  gin.H{},
+		})
+		return
+	}
+
+	// 入口协议
+	destOverride := []string{"http", "tls"}
+	sock := Inbound{
+		Port:     1080,
+		Listen:   "127.0.0.1",
+		Protocol: "socks",
+		Settings: Socks{
+			Auth: "noauth",
+		},
+		Sniffing: Sniffing{
+			Enabled:      true,
+			DestOverride: destOverride,
+		},
+	}
+	inbounds := []Inbound{sock}
+
+	user := User{
+		ID:       param.UserID,
+		AlterID:  param.AlertID,
+		Level:    param.Level,
+		Security: param.Security,
+	}
+	users := []User{user}
+
+	vmess := Vmess{
+		Address: param.Address,
+		Port:    param.Port,
+		Users:   users,
+	}
+	protocols := []interface{}{vmess}
+
+	outboundConf := OutboundConfiguration{
+		Vnext: protocols,
+	}
+
+	outbound := Outbound{
+		Protocol: "vmess",
+		Settings: outboundConf,
+		StreamSettings: StreamSettings{
+			NetWork:  param.Network,
+			Security: param.NetSecurity,
+			WSSettings: WebSocket{
+				Path: param.Path,
+			},
+		},
+		Mux: Mux{
+			Enabled: true,
+		},
+	}
+
+	outbounds := []Outbound{outbound}
+	cnf := Config{
+		Inbounds:  inbounds,
+		Outbounds: outbounds,
+	}
+
+	str, err := json.MarshalIndent(&cnf, "", "    ")
+	if err != nil {
+		return
+	}
+
+	path := utils.BasePath() + "/test.json"
+	err = ioutil.WriteFile(path, str, 0666)
+	if err != nil {
+		panic(err)
+	}
 }

@@ -5,14 +5,13 @@ type ParamStart struct {
 	Address string `json:"address"`
 	Port    int    `json:"port"`
 
-	UserID   string `json:"user_id"`
-	AlertID  int    `json:"alert_id"`
+	UserID   string
+	AlertID  int    `json:"alertId"`
 	Level    int    `json:"level"`
 	Security string `json:"security"`
 
-	Method   string `json:"method"`
-	Protocol string `json:"protocol"`
-	Type     string `json:"type"`
-	Domain   string `json:"domain"`
-	Path     string `json:"path"`
+	Network     string `json:"network"`
+	Domains     string `json:"domains"`
+	Path        string `json:"path"`
+	NetSecurity string
 }
