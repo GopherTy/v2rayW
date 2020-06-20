@@ -37,6 +37,7 @@ func (Dispatcher) Start(c *gin.Context) {
 	parmasToJSON(c)
 	if instance != nil {
 		err := instance.Start()
+		defer instance.Close()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":  serve.StatusServerError,
@@ -172,6 +173,14 @@ func (Dispatcher) Stop(c *gin.Context) {
 			"msg": "服务关闭成功",
 		},
 	})
+}
+
+// Logs v2ray 启动后日志输出接口
+func (Dispatcher) Logs(c *gin.Context) {
+	if instance == nil {
+		return
+	}
+
 }
 
 // parmasToJSON 将 v2ray 启动参数转化为配置文件
