@@ -41,10 +41,10 @@ func NewToken(userID uint64) (token *Token, err error) {
 
 	// jwt 中的 payload,自定义内容。
 	claims := jwt.MapClaims{
-		"authorized":  true,                                    // 是否认证
-		"access_uuid": token.AccessUUID,                        // 访问令牌 id，用于从 redis 中获取访问令牌
-		"user_id":     userID,                                  // 用户 id
-		"exp":         time.Now().Add(15 * time.Minute).Unix(), // 过期时间
+		"authorized":  true,                               // 是否认证
+		"access_uuid": token.AccessUUID,                   // 访问令牌 id，用于从 redis 中获取访问令牌
+		"user_id":     userID,                             // 用户 id
+		"exp":         time.Now().Add(time.Minute).Unix(), // 过期时间
 	}
 
 	// 创建访问令牌
@@ -61,6 +61,11 @@ func NewToken(userID uint64) (token *Token, err error) {
 		return
 	}
 
+	return
+}
+
+// NewAccessToken .
+func NewAccessToken(userID uint64) (token *Token, err error) {
 	return
 }
 

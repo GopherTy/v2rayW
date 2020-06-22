@@ -66,6 +66,42 @@ func keyFunc(token *jwt.Token) (res interface{}, err error) {
 	return
 }
 
+// ExtractRefreshTokenMetadata refresh
+func ExtractRefreshTokenMetadata(refreshToken string) (userID uint64, err error) {
+	refresh, err := jwt.Parse(refreshToken, keyRefreshFunc)
+	if err != nil {
+		return
+	}
+	claims, ok := refresh.Claims.(jwt.MapClaims)
+	if !ok && !refresh.Valid {
+		err = errors.New("token 不符合规则")
+		return
+	}
+	if ok && refresh.Valid {
+		_, ok := claims["refresh_uuid"].(string)
+		if !ok {
+			err = errors.New("结构不匹配")
+			return
+		}
+		userID, err = strconv.ParseUint(fmt.Sprintf("%.f", claims["user_id"]), 10, 64)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+// 验证加密算法，并返回字符串
+func keyRefreshFunc(token *jwt.Token) (res interface{}, err error) {
+	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		err = fmt.Errorf("sign alg method not match: %v", token.Header["alg"])
+		return
+	}
+
+	res = []byte(AppSecretRefresh)
+	return
+}
+
 // ExtractTokenMetadata 提取 token 元数据用于验证是否正确
 func ExtractTokenMetadata(r *http.Request) (access *AccessDetails, err error) {
 	token, err := VerifyToken(r)

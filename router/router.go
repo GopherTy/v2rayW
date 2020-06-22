@@ -17,7 +17,7 @@ func (Router) Route(engine *gin.Engine) {
 	var ctl control.Controller
 
 	// 非组
-	engine.GET("/api/test", ctl.TestDispathce.Test) // 测试接口注册
+	engine.POST("/api/token/refresh", ctl.RefreshDispathce.RefreshToken) // 测试接口注册
 
 	// 组
 	// user
@@ -30,5 +30,5 @@ func (Router) Route(engine *gin.Engine) {
 	// v2ray
 	v2rayGroup := engine.Group("/api/v2ray")
 	v2rayGroup.POST("/start", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Start) // 启动
-	v2rayGroup.GET("/stop", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Stop)   // 关闭
+	v2rayGroup.GET("/stop", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Stop)    // 关闭
 }
