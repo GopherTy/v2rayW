@@ -32,7 +32,7 @@ func NewToken(userID uint64) (token *Token, err error) {
 	token = &Token{}
 
 	// 访问令牌过期时间和存在 redis 中的唯一 id
-	token.AtExpires = time.Now().Add(time.Minute * 15).Unix()
+	token.AtExpires = time.Now().Add(time.Minute * 30).Unix()
 	token.AccessUUID = uuid.NewV4().String()
 
 	// 刷新令牌
@@ -40,32 +40,33 @@ func NewToken(userID uint64) (token *Token, err error) {
 	token.RefreshUUID = uuid.NewV4().String()
 
 	// jwt 中的 payload,自定义内容。
-	claims := jwt.MapClaims{
-		"authorized":  true,                               // 是否认证
-		"access_uuid": token.AccessUUID,                   // 访问令牌 id，用于从 redis 中获取访问令牌
-		"user_id":     userID,                             // 用户 id
-		"exp":         time.Now().Add(time.Minute).Unix(), // 过期时间
+	atClaims := jwt.MapClaims{
+		"authorized":  true,             // 是否认证
+		"access_uuid": token.AccessUUID, // 访问令牌 id，用于从 redis 中获取访问令牌
+		"user_id":     userID,           // 用户 id
+		"exp":         token.AtExpires,  // 过期时间
 	}
-
 	// 创建访问令牌
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 	token.AccessToken, err = accessToken.SignedString([]byte(AppSecret)) // 此处因该将写入到配置文件中，以保证安全。
 	if err != nil {
 		return
 	}
 
+	// jwt 中的 payload,自定义内容。
+	rtClaims := jwt.MapClaims{
+		"refresh_uuid": token.RefreshUUID, // 访问令牌 id，用于从 redis 中获取访问令牌
+		"user_id":      userID,            // 用户 id
+		"exp":          token.RtExpires,   // 过期时间
+	}
+
 	// 创建刷新令牌
-	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, rtClaims)
 	token.RefreshToken, err = refreshToken.SignedString([]byte(AppSecretRefresh))
 	if err != nil {
 		return
 	}
 
-	return
-}
-
-// NewAccessToken .
-func NewAccessToken(userID uint64) (token *Token, err error) {
 	return
 }
 

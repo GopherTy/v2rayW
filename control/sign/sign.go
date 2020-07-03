@@ -128,8 +128,7 @@ func (Dispatcher) Login(c *gin.Context) {
 		logger.Logger().Error(err.Error())
 	}
 
-	// 登陆成功后给服务器设置 cookie
-	// c.SetCookie("v2ray-web", V2RAYWEB, 0, "/", "test.cn", false, true)
+	// 登陆成功后给服务器设置
 	c.JSON(http.StatusOK, gin.H{
 		"code":  serve.StatusOK,
 		"desc":  "",
