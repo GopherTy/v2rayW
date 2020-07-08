@@ -3,6 +3,9 @@ package sign
 import (
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/gopherty/v2ray-web/model"
 
 	"github.com/gopherty/v2ray-web/token"
 
@@ -26,12 +29,10 @@ func (Dispatcher) Join(c *gin.Context) {
 	err := c.ShouldBindWith(&param, binding.Default(c.Request.Method, c.ContentType()))
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":  serve.StatusOK,
-			"desc":  "前端请求参数和后端绑定参数不匹配",
-			"error": err.Error(),
-			"token": "",
-			"data":  gin.H{},
+		c.JSON(http.StatusUnprocessableEntity, model.BackToFrontEndData{
+			Code:        serve.StatusParamNotMatched,
+			Description: "前端请求参数和后端绑定参数不匹配",
+			Error:       err.Error(),
 		})
 		return
 	}
@@ -45,23 +46,18 @@ func (Dispatcher) Join(c *gin.Context) {
 
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":  serve.StatusDBServerError,
-			"desc":  "服务器内部错误",
-			"error": err.Error(),
-			"token": "",
-			"data":  gin.H{},
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusDBError,
+			Description: "数据库错误",
+			Error:       err.Error(),
 		})
 		return
 	}
 
 	// 注册成功
-	c.JSON(http.StatusOK, gin.H{
-		"code":  serve.StatusOK,
-		"desc":  "",
-		"error": "",
-		"token": "",
-		"data": gin.H{
+	c.JSON(http.StatusOK, model.BackToFrontEndData{
+		Code: serve.StatusOK,
+		Data: map[string]interface{}{
 			"msg": "注册成功",
 		},
 	})
@@ -74,12 +70,10 @@ func (Dispatcher) Login(c *gin.Context) {
 	err := c.ShouldBindWith(&param, binding.Default(c.Request.Method, c.ContentType()))
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
-			"code":  serve.StatusOK,
-			"desc":  "",
-			"error": err.Error(),
-			"token": "",
-			"data":  gin.H{},
+		c.JSON(http.StatusUnprocessableEntity, model.BackToFrontEndData{
+			Code:        serve.StatusParamNotMatched,
+			Description: "前端请求参数和后端绑定参数不匹配",
+			Error:       err.Error(),
 		})
 		return
 	}
@@ -97,23 +91,34 @@ func (Dispatcher) Login(c *gin.Context) {
 	ok, err := engine.Get(&user)
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":  serve.StatusDBServerError,
-			"desc":  "",
-			"error": err.Error(),
-			"token": "",
-			"data":  gin.H{},
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusDBError,
+			Description: "数据库错误",
+			Error:       err.Error(),
 		})
 		return
 	}
 
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":  serve.StatusDBServerError,
-			"desc":  "用户名或密码不正确",
-			"error": "",
-			"token": "",
-			"data":  gin.H{},
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusDBError,
+			Description: "用户名或密码不正确",
+		})
+		return
+	}
+
+	// 记录登录日志
+	userLog := &users.UserLoginLog{
+		UID:       user.ID,
+		ClientIP:  c.ClientIP(),
+		LoginTime: time.Now(),
+	}
+	_, err = engine.Table(userLog.TableName()).Insert(userLog)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:  serve.StatusDBError,
+			Error: err.Error(),
 		})
 		return
 	}
@@ -129,16 +134,14 @@ func (Dispatcher) Login(c *gin.Context) {
 	}
 
 	// 登陆成功后给服务器设置
-	c.JSON(http.StatusOK, gin.H{
-		"code":  serve.StatusOK,
-		"desc":  "",
-		"error": "",
-		"token": gin.H{
-			"access_token":  t.AccessToken,
-			"refresh_token": t.RefreshToken,
+	c.JSON(http.StatusOK, model.BackToFrontEndData{
+		Code: serve.StatusOK,
+		Auth: model.Auth{
+			AccessToken:  t.AccessToken,
+			RefreshToken: t.RefreshToken,
 		},
-		"data": gin.H{
-			"msg": "登陆成功",
+		Data: map[string]interface{}{
+			"msg": "登录成功",
 		},
 	})
 }
@@ -147,20 +150,19 @@ func (Dispatcher) Login(c *gin.Context) {
 func (Dispatcher) Logout(c *gin.Context) {
 	access, err := token.ExtractTokenMetadata(c.Request)
 	if err != nil {
+		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusUnauthorized, "unauthorized")
 		return
 	}
 	deleted, err := token.DeleteAuth(access.AccessUUID)
 	if err != nil || deleted == 0 {
+		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"code":  serve.StatusOK,
-		"desc":  "",
-		"error": "",
-		"token": "",
-		"data": gin.H{
+	c.JSON(http.StatusOK, model.BackToFrontEndData{
+		Code: serve.StatusOK,
+		Data: map[string]interface{}{
 			"msg": "成功登出",
 		},
 	})

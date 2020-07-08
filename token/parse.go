@@ -31,6 +31,20 @@ func ExtractToken(r *http.Request) string {
 	return ""
 }
 
+// ValidWSToken 验证 websocket 中的 token合法性。
+func ValidWSToken(r *http.Request) (err error) {
+	wsToken := r.Header.Get("Sec-WebSocket-Protocol")
+	token, err := jwt.Parse(wsToken, keyFunc)
+	if err != nil {
+		return
+	}
+
+	if _, ok := token.Claims.(jwt.Claims); !ok && !token.Valid {
+		return errors.New("token invalid")
+	}
+	return
+}
+
 // VerifyToken 验证 token 字符串的合法性
 func VerifyToken(r *http.Request) (token *jwt.Token, err error) {
 	tokenStr := ExtractToken(r)

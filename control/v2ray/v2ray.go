@@ -1,12 +1,16 @@
 package v2ray
 
 import (
+	"bufio"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin/binding"
+	"github.com/gopherty/v2ray-web/model"
+	"github.com/gopherty/v2ray-web/token"
+	"github.com/gorilla/websocket"
 
 	// v2ray core 启动的依赖
 	_ "v2ray.com/core/app/dispatcher"
@@ -24,7 +28,9 @@ import (
 
 // 启动成功后保存实例的状态用于关闭
 var (
-	instance *core.Instance
+	instance  *core.Instance
+	oldStdout *os.File
+	close     = false
 )
 
 // Dispatcher v2ray 功能相关的控制器
@@ -37,24 +43,20 @@ func (Dispatcher) Start(c *gin.Context) {
 	parmasToJSON(c)
 	if instance != nil {
 		err := instance.Start()
-		defer instance.Close()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":  serve.StatusServerError,
-				"desc":  "",
-				"error": err.Error(),
-				"token": "",
-				"data":  gin.H{},
+			logger.Logger().Error(err.Error())
+			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+				Code:        serve.StatusV2rayError,
+				Description: "v2ray 启动错误",
+				Error:       err.Error(),
 			})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{
-			"code":  serve.StatusOK,
-			"desc":  "",
-			"error": "",
-			"token": "",
-			"data": gin.H{
-				"msg": "服务启动成功",
+
+		c.JSON(http.StatusOK, model.BackToFrontEndData{
+			Code: serve.StatusOK,
+			Data: map[string]interface{}{
+				"msg": "v2ray 服务启动成功",
 			},
 		})
 		return
@@ -62,16 +64,13 @@ func (Dispatcher) Start(c *gin.Context) {
 
 	// 暂定 v2ray 配置文件名称和位置硬编码，因为是通过 web-ui 来对配置文件进行操作。
 	path := utils.BasePath() + "/test.json"
-
 	file, err := os.Open(path)
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":  serve.StatusServerError,
-			"desc":  "",
-			"error": err.Error(),
-			"token": "",
-			"data":  gin.H{},
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusServerError,
+			Description: "打开 v2ray 配置文件出错",
+			Error:       err.Error(),
 		})
 		return
 	}
@@ -86,15 +85,13 @@ func (Dispatcher) Start(c *gin.Context) {
 	})
 
 	// 解析 v2ray 的配置文件
-	config, err := core.LoadConfig("json", "v2ray.json", file)
+	config, err := core.LoadConfig("json", "test.json", file)
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":  serve.StatusServerError,
-			"desc":  "",
-			"error": err.Error(),
-			"token": "",
-			"data":  gin.H{},
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusServerError,
+			Description: "加载 v2ray 配置文件出错",
+			Error:       err.Error(),
 		})
 		return
 	}
@@ -103,12 +100,10 @@ func (Dispatcher) Start(c *gin.Context) {
 	instance, err = core.New(config)
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":  serve.StatusServerError,
-			"desc":  "",
-			"error": err.Error(),
-			"token": "",
-			"data":  gin.H{},
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusV2rayError,
+			Description: "创建 v2ray 实例出错",
+			Error:       err.Error(),
 		})
 		return
 	}
@@ -116,22 +111,17 @@ func (Dispatcher) Start(c *gin.Context) {
 	err = instance.Start()
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":  serve.StatusServerError,
-			"desc":  "",
-			"error": err.Error(),
-			"token": "",
-			"data":  gin.H{},
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusV2rayError,
+			Description: "v2ray 启动错误",
+			Error:       err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":  serve.StatusOK,
-		"desc":  "",
-		"error": "",
-		"token": "",
-		"data": gin.H{
+	c.JSON(http.StatusOK, model.BackToFrontEndData{
+		Code: serve.StatusOK,
+		Data: map[string]interface{}{
 			"msg": "服务启动成功",
 		},
 	})
@@ -140,12 +130,9 @@ func (Dispatcher) Start(c *gin.Context) {
 // Stop 关闭 v2ray 服务
 func (Dispatcher) Stop(c *gin.Context) {
 	if instance == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":  serve.StatusServerError,
-			"desc":  "",
-			"error": "服务未启动",
-			"token": "",
-			"data":  gin.H{},
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:  serve.StatusV2rayError,
+			Error: "服务未启动",
 		})
 		return
 	}
@@ -153,23 +140,18 @@ func (Dispatcher) Stop(c *gin.Context) {
 	err := instance.Close()
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":  serve.StatusServerError,
-			"desc":  "",
-			"error": err.Error(),
-			"token": "",
-			"data":  gin.H{},
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusV2rayError,
+			Description: "v2ray 关闭服务失败",
+			Error:       err.Error(),
 		})
 		return
 	}
 
-	// 释放全局资源
-	c.JSON(http.StatusOK, gin.H{
-		"code":  serve.StatusOK,
-		"desc":  "",
-		"error": "",
-		"token": "",
-		"data": gin.H{
+	close = true
+	c.JSON(http.StatusOK, model.BackToFrontEndData{
+		Code: serve.StatusOK,
+		Data: map[string]interface{}{
 			"msg": "服务关闭成功",
 		},
 	})
@@ -177,8 +159,85 @@ func (Dispatcher) Stop(c *gin.Context) {
 
 // Logs v2ray 启动后日志输出接口
 func (Dispatcher) Logs(c *gin.Context) {
-	if instance == nil {
+	err := token.ValidWSToken(c.Request)
+	if err != nil {
+		c.String(http.StatusUnauthorized, "Unauthorized")
 		return
+	}
+
+	// 获取日志输出
+	upgrader := websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	defer conn.Close()
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusV2rayError,
+			Description: "v2ray 日志启动失败",
+			Error:       err.Error(),
+		})
+		return
+	}
+
+	// 启动后捕获控制台
+	oldStdout = os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		return
+	}
+	os.Stdout = w
+	go func() {
+		for {
+			reader := bufio.NewReader(r)
+			logs, err := reader.ReadBytes('\n')
+			if err != nil {
+				logger.Logger().Error(err.Error())
+				return
+			}
+			err = conn.WriteMessage(websocket.TextMessage, logs)
+			if err != nil {
+				logger.Logger().Error(err.Error())
+				c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+					Code:        serve.StatusV2rayError,
+					Description: "v2ray 日志写入失败",
+					Error:       err.Error(),
+				})
+				return
+			}
+		}
+	}()
+
+	// 读取客户端发送的停止日志输出。
+	for {
+		_, r, err := conn.ReadMessage()
+		if err != nil {
+			logger.Logger().Error(err.Error())
+			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+				Code:        serve.StatusV2rayError,
+				Description: "v2ray 日志写入失败",
+				Error:       err.Error(),
+			})
+			break
+		}
+		if string(r) == "c" {
+			if err = w.Close(); err != nil {
+				logger.Logger().Error(err.Error())
+				c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+					Code:        serve.StatusV2rayError,
+					Description: "v2ray 日志写入失败",
+					Error:       err.Error(),
+				})
+				break
+			}
+			os.Stdout = oldStdout
+		}
 	}
 
 }
@@ -190,12 +249,10 @@ func parmasToJSON(c *gin.Context) {
 	err := c.ShouldBindWith(&param, binding.Default(c.Request.Method, c.ContentType()))
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
-			"code":  serve.StatusServerError,
-			"desc":  "",
-			"error": err.Error(),
-			"token": "",
-			"data":  gin.H{},
+		c.JSON(http.StatusUnprocessableEntity, model.BackToFrontEndData{
+			Code:        serve.StatusParamNotMatched,
+			Description: "前端请求参数和后端绑定参数不匹配",
+			Error:       err.Error(),
 		})
 		return
 	}
@@ -264,6 +321,6 @@ func parmasToJSON(c *gin.Context) {
 	path := utils.BasePath() + "/test.json"
 	err = ioutil.WriteFile(path, str, 0666)
 	if err != nil {
-		panic(err)
+		return
 	}
 }
