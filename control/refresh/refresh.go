@@ -29,31 +29,40 @@ func (Dispatcher) RefreshToken(c *gin.Context) {
 			Description: "前端请求参数和后端绑定参数不匹配",
 			Error:       err.Error(),
 		})
+		return
 	}
 
 	userID, err := token.ExtractRefreshTokenMetadata(refreshToken["refresh_token"])
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusUnauthorized, model.BackToFrontEndData{
+		c.JSON(http.StatusForbidden, model.BackToFrontEndData{
 			Code:        serve.StatusServerError,
-			Description: "服务器获取 metadata 信息失败",
+			Description: "服务器解析 refresh_token 出错",
 			Error:       err.Error(),
 		})
+		return
 	}
 	t, err := token.NewToken(userID)
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusUnauthorized, model.BackToFrontEndData{
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
 			Code:        serve.StatusServerError,
 			Description: "服务器生成 token 失败",
 			Error:       err.Error(),
 		})
+		return
 	}
 
 	// 将 token 存入到 redis 中。
 	atExp := time.Unix(t.AtExpires, 0)
 	err = db.Client().Set(t.AccessUUID, strconv.Itoa(int(userID)), atExp.Sub(time.Now())).Err()
 	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusServerError,
+			Description: "服务器生成 token 失败",
+			Error:       err.Error(),
+		})
 		return
 	}
 

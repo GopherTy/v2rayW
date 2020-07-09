@@ -32,7 +32,7 @@ func NewToken(userID uint64) (token *Token, err error) {
 	token = &Token{}
 
 	// 访问令牌过期时间和存在 redis 中的唯一 id
-	token.AtExpires = time.Now().Add(time.Minute * 30).Unix()
+	token.AtExpires = time.Now().Add(time.Minute * 15).Unix()
 	token.AccessUUID = uuid.NewV4().String()
 
 	// 刷新令牌
