@@ -177,11 +177,6 @@ func (Dispatcher) Logs(c *gin.Context) {
 	defer conn.Close()
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
-			Code:        serve.StatusV2rayError,
-			Description: "v2ray 日志启动失败",
-			Error:       err.Error(),
-		})
 		return
 	}
 
@@ -199,47 +194,28 @@ func (Dispatcher) Logs(c *gin.Context) {
 			logs, err := reader.ReadBytes('\n')
 			if err != nil {
 				logger.Logger().Error(err.Error())
-				return
+				os.Stdout = oldStdout
+				oldStdout = nil
+				break
 			}
 			err = conn.WriteMessage(websocket.TextMessage, logs)
 			if err != nil {
 				logger.Logger().Error(err.Error())
-				c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
-					Code:        serve.StatusV2rayError,
-					Description: "v2ray 日志写入失败",
-					Error:       err.Error(),
-				})
-				return
+				os.Stdout = oldStdout
+				oldStdout = nil
+				break
 			}
 		}
 	}()
 
 	// 读取客户端发送的停止日志输出。
 	for {
-		_, r, err := conn.ReadMessage()
+		_, _, err := conn.ReadMessage()
 		if err != nil {
 			logger.Logger().Error(err.Error())
-			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
-				Code:        serve.StatusV2rayError,
-				Description: "v2ray 日志写入失败",
-				Error:       err.Error(),
-			})
 			break
 		}
-		if string(r) == "c" {
-			if err = w.Close(); err != nil {
-				logger.Logger().Error(err.Error())
-				c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
-					Code:        serve.StatusV2rayError,
-					Description: "v2ray 日志写入失败",
-					Error:       err.Error(),
-				})
-				break
-			}
-			os.Stdout = oldStdout
-		}
 	}
-
 }
 
 // parmasToJSON 将 v2ray 启动参数转化为配置文件
