@@ -4,6 +4,7 @@ import (
 	"github.com/gopherty/v2ray-web/config"
 	"github.com/gopherty/v2ray-web/logger"
 	"github.com/gopherty/v2ray-web/model/auth"
+	"github.com/gopherty/v2ray-web/model/proxy"
 	"github.com/gopherty/v2ray-web/model/users"
 
 	"github.com/go-redis/redis/v7"
@@ -58,13 +59,24 @@ func (Register) Regist() {
 		logger.Logger().Fatal(err.Error())
 	}
 
+	// v2ray 代理协议相关表
+	// vmess 协议表
+	exists, err := db.IsTableExist(&proxy.Vmess{})
+	if err != nil {
+		logger.Logger().Fatal(err.Error())
+	}
+	if !exists {
+		db.CreateTables(&proxy.Vmess{})
+	}
+	db.Sync2(&proxy.Vmess{})
+
 	// 是否关闭用户管理
 	if cnf.DB.UserManageDisable {
 		return
 	}
 
 	// 用户表
-	exists, err := db.IsTableExist(&users.User{})
+	exists, err = db.IsTableExist(&users.User{})
 	if err != nil {
 		logger.Logger().Fatal(err.Error())
 	}

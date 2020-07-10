@@ -2,7 +2,7 @@
     "DB": {
         "Driver": "mysql",
         "Source": "ty:123@tcp(localhost:3306)/gopherty?charset=utf8",
-        "ShowSQL": false,
+        "ShowSQL": true,
         "MaxOpenConns": 100,
         "MaxIdleConns": 5,
         "Cached": 200,

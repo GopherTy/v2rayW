@@ -7,6 +7,10 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/gopherty/v2ray-web/model/proxy"
+
+	"github.com/gopherty/v2ray-web/db"
+
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gopherty/v2ray-web/model"
 	"github.com/gopherty/v2ray-web/token"
@@ -159,12 +163,6 @@ func (Dispatcher) Stop(c *gin.Context) {
 
 // Logs v2ray 启动后日志输出接口
 func (Dispatcher) Logs(c *gin.Context) {
-	err := token.ValidWSToken(c.Request)
-	if err != nil {
-		c.String(http.StatusUnauthorized, "Unauthorized")
-		return
-	}
-
 	// 获取日志输出
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
@@ -177,6 +175,17 @@ func (Dispatcher) Logs(c *gin.Context) {
 	defer conn.Close()
 	if err != nil {
 		logger.Logger().Error(err.Error())
+		return
+	}
+
+	err = token.ValidWSToken(c.Request)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		closed := conn.CloseHandler()
+		err = closed(5001, "unauthrizationed")
+		if err != nil {
+			logger.Logger().Error(err.Error())
+		}
 		return
 	}
 
@@ -216,6 +225,78 @@ func (Dispatcher) Logs(c *gin.Context) {
 			break
 		}
 	}
+}
+
+// GetProxyProtocols 获取用户所有的代理协议
+func (Dispatcher) GetProxyProtocols(c *gin.Context) {
+	var params map[string]interface{}
+	err := c.ShouldBindWith(&params, binding.Default(c.Request.Method, c.ContentType()))
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	engine := db.Engine()
+	session := engine.NewSession()
+	defer session.Close()
+
+	session.Begin()
+	var v2rays []proxy.Vmess
+	err = session.Table("vmess").Where("user_id = ?", params["uid"]).Find(&v2rays)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		session.Rollback()
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	session.Commit()
+	c.JSON(http.StatusOK, gin.H{
+		"vmess": v2rays,
+	})
+}
+
+// AddProxyProtocol 增加代理协议
+func (Dispatcher) AddProxyProtocol(c *gin.Context) {
+	// 获取 json 对象与后端数据结构绑定
+	var params ProtocolConf
+	err := c.ShouldBindWith(&params, binding.Default(c.Request.Method, c.ContentType()))
+	if err != nil {
+		c.String(http.StatusUnprocessableEntity, "传递参数与后端不一致")
+		return
+	}
+
+	// 获取数据库对象
+	engine := db.Engine()
+	switch params.Protocol {
+	case "vmess":
+		v2ray := &proxy.Vmess{
+			UID:         uint64(params.UID),
+			Name:        params.Name,
+			Address:     params.Address,
+			Port:        params.Port,
+			UserID:      params.UserID,
+			AlertID:     params.AlertID,
+			Security:    params.Security,
+			Level:       params.Level,
+			Network:     params.Network,
+			NetSecurity: params.NetSecurity,
+			Path:        params.Path,
+			Domains:     params.Domains,
+		}
+		_, err := engine.Table(v2ray.TableName()).Insert(v2ray)
+		if err != nil {
+			logger.Logger().Error(err.Error())
+			c.String(http.StatusInternalServerError, "增加协议失败")
+			return
+		}
+	default:
+		c.String(http.StatusInternalServerError, "不支持该协议")
+		return
+	}
+
+	c.String(http.StatusOK, "增加成功")
 }
 
 // parmasToJSON 将 v2ray 启动参数转化为配置文件
