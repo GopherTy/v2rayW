@@ -1,4 +1,4 @@
-package sign
+package user
 
 // ParamLogin accept parameters pass from network.
 type ParamLogin struct {

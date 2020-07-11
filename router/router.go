@@ -22,17 +22,19 @@ func (Router) Route(engine *gin.Engine) {
 	// 组
 	// user
 	userGroup := engine.Group("/api/user")
-
-	userGroup.POST("/join", ctl.SignDispacher.Join)                                      // 用户注册
-	userGroup.POST("/login", ctl.SignDispacher.Login)                                    // 用户登陆
-	userGroup.GET("/logout", middleware.TokenAuthMiddleware(), ctl.SignDispacher.Logout) // 用户登出
+	userGroup.POST("/join", ctl.UserDispacher.Join)                                       // 用户注册
+	userGroup.POST("/login", ctl.UserDispacher.Login)                                     // 用户登陆
+	userGroup.GET("/logout", middleware.TokenAuthMiddleware(), ctl.UserDispacher.Logout)  // 用户登出
+	userGroup.POST("/passwd", middleware.TokenAuthMiddleware(), ctl.UserDispacher.Passwd) // 修改密码
 
 	// v2ray
 	v2rayGroup := engine.Group("/api/v2ray")
-	v2rayGroup.POST("/protocol/list", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.GetProxyProtocols) // 获取代理协议
-	v2rayGroup.POST("/protocol/add", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.AddProxyProtocol)   // 增加代理协议
-
 	v2rayGroup.POST("/start", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Start) // 启动
 	v2rayGroup.GET("/stop", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Stop)    // 关闭
-	v2rayGroup.GET("/logs", ctl.V2rayDispathcer.Logs)                                      // 日志
+	v2rayGroup.GET("/logs", ctl.V2rayDispathcer.Logs)                                      // 日志( websocket )
+
+	// protocol
+	protocolGroup := engine.Group("/api/protocol")
+	protocolGroup.POST("/add", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.AddProxyProtocol)   // 增加代理协议
+	protocolGroup.POST("/list", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.GetProxyProtocols) // 获取代理协议
 }
