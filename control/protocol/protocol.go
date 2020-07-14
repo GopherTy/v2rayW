@@ -14,8 +14,8 @@ import (
 type Dispatcher struct {
 }
 
-// GetProxyProtocols 获取用户所有的代理协议
-func (Dispatcher) GetProxyProtocols(c *gin.Context) {
+// ListProxyProtocols 获取用户所有的代理协议
+func (Dispatcher) ListProxyProtocols(c *gin.Context) {
 	var params map[string]interface{}
 	err := c.ShouldBindWith(&params, binding.Default(c.Request.Method, c.ContentType()))
 	if err != nil {
@@ -50,6 +50,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 	var params Content
 	err := c.ShouldBindWith(&params, binding.Default(c.Request.Method, c.ContentType()))
 	if err != nil {
+		logger.Logger().Error(err.Error())
 		c.String(http.StatusUnprocessableEntity, "传递参数与后端不一致")
 		return
 	}
@@ -84,4 +85,80 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 	}
 
 	c.String(http.StatusOK, "增加成功")
+}
+
+// DeleteProxyProtocol 删除代理协议
+func (Dispatcher) DeleteProxyProtocol(c *gin.Context) {
+	var params DeleteParams
+	err := c.ShouldBindWith(params, binding.Default(c.Request.Method, c.ContentType()))
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.String(http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
+	var protocolName string
+	var bean interface{}
+	switch params.ProtocolName {
+	case "vmess":
+		protocolName = "vmess"
+		bean = proxy.Vmess{
+			ID: uint64(params.ProtocolID),
+		}
+	default:
+		protocolName = "undefine"
+	}
+	if protocolName == "" || protocolName == "undefine" {
+		c.String(http.StatusInternalServerError, "不支持该协议")
+		return
+	}
+	engine := db.Engine()
+	_, err = engine.Table(protocolName).Delete(bean)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.String(http.StatusOK, "删除成功")
+}
+
+// UpdateProxyProtocol 修改代理协议
+func (Dispatcher) UpdateProxyProtocol(c *gin.Context) {
+	var params Content
+	err := c.ShouldBindWith(&params, binding.Default(c.Request.Method, c.ContentType()))
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.String(http.StatusUnprocessableEntity, "传递参数与后端不一致")
+		return
+	}
+
+	engine := db.Engine()
+	switch params.Protocol {
+	case "vmess":
+		v2ray := &proxy.Vmess{
+			UID:         uint64(params.UID),
+			Name:        params.Name,
+			Address:     params.Address,
+			Port:        params.Port,
+			UserID:      params.UserID,
+			AlertID:     params.AlertID,
+			Security:    params.Security,
+			Level:       params.Level,
+			Network:     params.Network,
+			NetSecurity: params.NetSecurity,
+			Path:        params.Path,
+			Domains:     params.Domains,
+		}
+		_, err := engine.Table(v2ray.TableName()).Where(" id = ?", params.ID).Update(v2ray)
+		if err != nil {
+			logger.Logger().Error(err.Error())
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+	default:
+		c.String(http.StatusInternalServerError, "不支持该协议")
+		return
+	}
+
+	c.String(http.StatusOK, "修改成功")
 }

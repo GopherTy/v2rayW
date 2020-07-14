@@ -174,6 +174,8 @@ func (Dispatcher) Logs(c *gin.Context) {
 		return
 	}
 
+	// 先将 http 请求升级为 websocket ，在验证 token 是否过期，如果过期则返回 websocket 中的保留状态码 5000-10000
+	// 客户端知道 token 过期，就将刷新 token 或 重新登录后再次请求该接口。
 	err = token.ValidWSToken(c.Request)
 	if err != nil {
 		logger.Logger().Error(err.Error())

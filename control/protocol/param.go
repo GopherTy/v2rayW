@@ -4,7 +4,8 @@ package protocol
 type Content struct {
 	UID int `json:"uId"` // 登录用户的 id
 
-	Protocol string `json:"protocol"` // 协议
+	ID       int    `json:"id"`       // 协议 id
+	Protocol string `json:"protocol"` // 协议名称
 
 	// 协议相关的配置
 	Name    string `json:"name"`    // 配置协议别名
@@ -21,4 +22,10 @@ type Content struct {
 	Domains     string `json:"domains"`     // 伪装域名
 	Path        string `json:"path"`        // 路径
 	NetSecurity string `json:"netSecurity"` // 伪装网络协议的加密方式
+}
+
+// DeleteParams 删除协议参数
+type DeleteParams struct {
+	ProtocolName string // 协议名称
+	ProtocolID   int    // 协议 id
 }
