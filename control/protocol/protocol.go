@@ -84,13 +84,15 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 		return
 	}
 
-	c.String(http.StatusOK, "增加成功")
+	c.JSON(http.StatusOK, gin.H{
+		"msg": "增加成功",
+	})
 }
 
 // DeleteProxyProtocol 删除代理协议
 func (Dispatcher) DeleteProxyProtocol(c *gin.Context) {
 	var params DeleteParams
-	err := c.ShouldBindWith(params, binding.Default(c.Request.Method, c.ContentType()))
+	err := c.ShouldBindWith(&params, binding.Default(c.Request.Method, c.ContentType()))
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.String(http.StatusUnprocessableEntity, err.Error())
@@ -119,7 +121,9 @@ func (Dispatcher) DeleteProxyProtocol(c *gin.Context) {
 		return
 	}
 
-	c.String(http.StatusOK, "删除成功")
+	c.JSON(http.StatusOK, gin.H{
+		"msg": "删除成功",
+	})
 }
 
 // UpdateProxyProtocol 修改代理协议
@@ -160,5 +164,7 @@ func (Dispatcher) UpdateProxyProtocol(c *gin.Context) {
 		return
 	}
 
-	c.String(http.StatusOK, "修改成功")
+	c.JSON(http.StatusOK, gin.H{
+		"msg": "修改成功",
+	})
 }

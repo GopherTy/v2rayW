@@ -26,6 +26,6 @@ type Content struct {
 
 // DeleteParams 删除协议参数
 type DeleteParams struct {
-	ProtocolName string // 协议名称
-	ProtocolID   int    // 协议 id
+	ProtocolName string `json:"name"` // 协议名称
+	ProtocolID   int    `json:"id"`   // 协议 id
 }
