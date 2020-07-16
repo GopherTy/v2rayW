@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gopherty/v2ray-web/model"
@@ -30,7 +32,11 @@ import (
 var (
 	instance  *core.Instance
 	oldStdout *os.File
-	close     = false
+
+	// v2ray 服务状态, true 代表运行，false 代表停止。
+	Protocol string // 协议名称
+	ID       int    // 协议id
+	Status   = 0
 )
 
 // Dispatcher v2ray 功能相关的控制器
@@ -40,7 +46,17 @@ type Dispatcher struct {
 // Start 启动 v2ray 服务
 func (Dispatcher) Start(c *gin.Context) {
 	// 将前端传过来的参数解析成 JSON 格式写入到文件中。
-	parmasToJSON(c)
+	protocol, id, err := parmasToJSON(c)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusParamNotMatched,
+			Description: "解析参数错误",
+			Error:       err.Error(),
+		})
+		return
+	}
+
 	if instance != nil {
 		err := instance.Start()
 		if err != nil {
@@ -59,11 +75,16 @@ func (Dispatcher) Start(c *gin.Context) {
 				"msg": "v2ray 服务启动成功",
 			},
 		})
+
+		// 保存 v2ray 的状态
+		Protocol = protocol
+		ID = id
+		Status = 1
 		return
 	}
 
 	// 暂定 v2ray 配置文件名称和位置硬编码，因为是通过 web-ui 来对配置文件进行操作。
-	path := utils.BasePath() + "/test.json"
+	path := utils.BasePath() + "/v2ray.json"
 	file, err := os.Open(path)
 	if err != nil {
 		logger.Logger().Error(err.Error())
@@ -85,7 +106,7 @@ func (Dispatcher) Start(c *gin.Context) {
 	})
 
 	// 解析 v2ray 的配置文件
-	config, err := core.LoadConfig("json", "test.json", file)
+	config, err := core.LoadConfig("json", "v2ray.json", file)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -125,6 +146,11 @@ func (Dispatcher) Start(c *gin.Context) {
 			"msg": "服务启动成功",
 		},
 	})
+
+	// 保存 v2ray 的状态
+	Protocol = protocol
+	ID = id
+	Status = 1
 }
 
 // Stop 关闭 v2ray 服务
@@ -148,13 +174,17 @@ func (Dispatcher) Stop(c *gin.Context) {
 		return
 	}
 
-	close = true
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
 		Code: serve.StatusOK,
 		Data: map[string]interface{}{
 			"msg": "服务关闭成功",
 		},
 	})
+
+	// 保存 v2ray 的状态
+	Protocol = ""
+	ID = 0
+	Status = 0
 }
 
 // Logs v2ray 启动后日志输出接口
@@ -200,16 +230,17 @@ func (Dispatcher) Logs(c *gin.Context) {
 			reader := bufio.NewReader(r)
 			logs, err := reader.ReadBytes('\n')
 			if err != nil {
-				logger.Logger().Error(err.Error())
+				r.Close()
 				os.Stdout = oldStdout
 				oldStdout = nil
+				logger.Logger().Error(err.Error())
 				break
 			}
 			err = conn.WriteMessage(websocket.TextMessage, logs)
 			if err != nil {
-				logger.Logger().Error(err.Error())
 				os.Stdout = oldStdout
 				oldStdout = nil
+				logger.Logger().Error(err.Error())
 				break
 			}
 		}
@@ -225,18 +256,64 @@ func (Dispatcher) Logs(c *gin.Context) {
 	}
 }
 
-// parmasToJSON 将 v2ray 启动参数转化为配置文件
-func parmasToJSON(c *gin.Context) {
-	// 绑定参数
-	var param ParamStart
-	err := c.ShouldBindWith(&param, binding.Default(c.Request.Method, c.ContentType()))
+// Status 服务器端 v2ray 的状态
+func (Dispatcher) Status(c *gin.Context) {
+	upgrader := websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	defer conn.Close()
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusUnprocessableEntity, model.BackToFrontEndData{
-			Code:        serve.StatusParamNotMatched,
-			Description: "前端请求参数和后端绑定参数不匹配",
-			Error:       err.Error(),
-		})
+		return
+	}
+
+	// 先将 http 请求升级为 websocket ，在验证 token 是否过期，如果过期则返回 websocket 中的保留状态码 5000-10000
+	// 客户端知道 token 过期，就将刷新 token 或 重新登录后再次请求该接口。
+	err = token.ValidWSToken(c.Request)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		closed := conn.CloseHandler()
+		err = closed(5001, "unauthrizationed")
+		if err != nil {
+			logger.Logger().Error(err.Error())
+		}
+		return
+	}
+
+	status := strconv.Itoa(Status)
+	id := strconv.Itoa(ID)
+	// 发送服务器端 v2ray 的状态
+	go func() {
+		for {
+			err := conn.WriteMessage(websocket.TextMessage, []byte(status+":"+Protocol+":"+id))
+			if err != nil {
+				break
+			}
+			time.Sleep(1e9)
+		}
+	}()
+
+	// 读取客户端发送的关闭连接。
+	for {
+		_, _, err := conn.ReadMessage()
+		if err != nil {
+			logger.Logger().Error(err.Error())
+			break
+		}
+	}
+}
+
+// parmasToJSON 将 v2ray 启动参数转化为配置文件
+func parmasToJSON(c *gin.Context) (name string, id int, err error) {
+	// 绑定参数
+	var param ParamStart
+	err = c.ShouldBindWith(&param, binding.Default(c.Request.Method, c.ContentType()))
+	if err != nil {
 		return
 	}
 
@@ -301,9 +378,11 @@ func parmasToJSON(c *gin.Context) {
 		return
 	}
 
-	path := utils.BasePath() + "/test.json"
+	path := utils.BasePath() + "/v2ray.json"
 	err = ioutil.WriteFile(path, str, 0666)
 	if err != nil {
 		return
 	}
+
+	return param.Protocol, param.ID, err
 }

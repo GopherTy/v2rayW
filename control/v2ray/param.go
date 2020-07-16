@@ -2,6 +2,9 @@ package v2ray
 
 // ParamStart accept parameters pass from network.
 type ParamStart struct {
+	Protocol string // 协议名称
+	ID       int    // 协议 id
+
 	Address string `json:"address"`
 	Port    int    `json:"port"`
 

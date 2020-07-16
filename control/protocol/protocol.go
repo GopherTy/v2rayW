@@ -62,6 +62,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 		v2ray := &proxy.Vmess{
 			UID:         uint64(params.UID),
 			Name:        params.Name,
+			Protocol:    params.Protocol,
 			Address:     params.Address,
 			Port:        params.Port,
 			UserID:      params.UserID,

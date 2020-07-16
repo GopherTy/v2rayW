@@ -2,12 +2,14 @@ package proxy
 
 // Vmess   vmess 协议表
 type Vmess struct {
-	ID  uint64 `xorm:"pk  autoincr 'id'"`
-	UID uint64 `xorm:"not null 'user_id'"`
+	ID uint64 `xorm:"pk  autoincr 'id' BIGINT"`
+	// 用户 id，用于区分是哪个用户的协议。
+	UID uint64 `xorm:"notnull 'user_id' BIGINT"`
 
-	Name    string `xorm:"'name'"`
-	Address string `xorm:"'address'"`
-	Port    int    `xorm:"port"`
+	Name     string `xorm:"'name' VARCHAR(255)"`
+	Protocol string `xorm:"notnull  comment('协议名称')  default('vmess')  'protocol' VARCHAR(255)"`
+	Address  string `xorm:"'address' VARCHAR(255)"`
+	Port     int    `xorm:"'port' INT"`
 
 	// settings vnext  users
 	UserID   string `xorm:"userId"`

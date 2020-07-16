@@ -32,6 +32,7 @@ func (Router) Route(engine *gin.Engine) {
 	v2rayGroup.POST("/start", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Start) // 启动
 	v2rayGroup.GET("/stop", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Stop)    // 关闭
 	v2rayGroup.GET("/logs", ctl.V2rayDispathcer.Logs)                                      // 日志( websocket )
+	v2rayGroup.GET("/status", ctl.V2rayDispathcer.Status)                                  // v2ray状态( websocket )
 
 	// protocol
 	protocolGroup := engine.Group("/api/protocol")
