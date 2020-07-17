@@ -251,9 +251,9 @@ func (Dispatcher) Logs(c *gin.Context) {
 		_, _, err := conn.ReadMessage()
 		if err != nil {
 			signal <- 1 // 中断发送消息操作
-			_, _, stdout := v2raylogs.Source()
-			os.Stdout = stdout
-			stdout = nil
+			// _, _, stdout := v2raylogs.Source()
+			// os.Stdout = stdout
+			// stdout = nil
 			logger.Logger().Error(err.Error())
 			break
 		}
