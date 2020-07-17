@@ -1,13 +1,13 @@
 package v2ray
 
 import (
-	"bufio"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
+
+	"github.com/gopherty/v2ray-web/v2raylogs"
 
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gopherty/v2ray-web/model"
@@ -30,13 +30,12 @@ import (
 
 // 启动成功后保存实例的状态用于关闭
 var (
-	instance  *core.Instance
-	oldStdout *os.File
+	instance *core.Instance
 
 	// v2ray 服务状态, true 代表运行，false 代表停止。
 	Protocol string // 协议名称
 	ID       int    // 协议id
-	Status   = 0
+	Running  = false
 )
 
 // Dispatcher v2ray 功能相关的控制器
@@ -69,17 +68,21 @@ func (Dispatcher) Start(c *gin.Context) {
 			return
 		}
 
+		// 获取到控制台资源
+		_, w, _ := v2raylogs.Source()
+		os.Stdout = w
+
+		// 保存 v2ray 的状态
+		Protocol = protocol
+		ID = id
+		Running = true
+
 		c.JSON(http.StatusOK, model.BackToFrontEndData{
 			Code: serve.StatusOK,
 			Data: map[string]interface{}{
 				"msg": "v2ray 服务启动成功",
 			},
 		})
-
-		// 保存 v2ray 的状态
-		Protocol = protocol
-		ID = id
-		Status = 1
 		return
 	}
 
@@ -140,17 +143,17 @@ func (Dispatcher) Start(c *gin.Context) {
 		return
 	}
 
+	// 保存 v2ray 的状态
+	Protocol = protocol
+	ID = id
+	Running = true
+
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
 		Code: serve.StatusOK,
 		Data: map[string]interface{}{
 			"msg": "服务启动成功",
 		},
 	})
-
-	// 保存 v2ray 的状态
-	Protocol = protocol
-	ID = id
-	Status = 1
 }
 
 // Stop 关闭 v2ray 服务
@@ -174,17 +177,22 @@ func (Dispatcher) Stop(c *gin.Context) {
 		return
 	}
 
+	// 交回控制台资源
+	_, _, stdout := v2raylogs.Source()
+	os.Stdout = stdout
+	stdout = nil
+
+	// 保存 v2ray 的状态
+	Protocol = ""
+	ID = 0
+	Running = false
+
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
 		Code: serve.StatusOK,
 		Data: map[string]interface{}{
 			"msg": "服务关闭成功",
 		},
 	})
-
-	// 保存 v2ray 的状态
-	Protocol = ""
-	ID = 0
-	Status = 0
 }
 
 // Logs v2ray 启动后日志输出接口
@@ -217,31 +225,23 @@ func (Dispatcher) Logs(c *gin.Context) {
 		return
 	}
 
-	// 启动后捕获控制台
-	oldStdout = os.Stdout
-	r, w, err := os.Pipe()
-	if err != nil {
-		logger.Logger().Error(err.Error())
-		return
-	}
-	os.Stdout = w
+	// 信号量，用于关闭发送消息协程。
+	signal := make(chan int)
 	go func() {
 		for {
-			reader := bufio.NewReader(r)
-			logs, err := reader.ReadBytes('\n')
-			if err != nil {
-				r.Close()
-				os.Stdout = oldStdout
-				oldStdout = nil
-				logger.Logger().Error(err.Error())
-				break
-			}
-			err = conn.WriteMessage(websocket.TextMessage, logs)
-			if err != nil {
-				os.Stdout = oldStdout
-				oldStdout = nil
-				logger.Logger().Error(err.Error())
-				break
+			select {
+			case msg := <-v2raylogs.LogsMsg():
+				// logger.Logger().Info(string(msg))
+				err = conn.WriteMessage(websocket.TextMessage, msg)
+				if err != nil {
+					_, _, stdout := v2raylogs.Source()
+					os.Stdout = stdout
+					stdout = nil
+					logger.Logger().Error(err.Error())
+					break
+				}
+			case <-signal:
+				return
 			}
 		}
 	}()
@@ -250,6 +250,10 @@ func (Dispatcher) Logs(c *gin.Context) {
 	for {
 		_, _, err := conn.ReadMessage()
 		if err != nil {
+			signal <- 1 // 中断发送消息操作
+			_, _, stdout := v2raylogs.Source()
+			os.Stdout = stdout
+			stdout = nil
 			logger.Logger().Error(err.Error())
 			break
 		}
@@ -285,12 +289,14 @@ func (Dispatcher) Status(c *gin.Context) {
 		return
 	}
 
-	status := strconv.Itoa(Status)
-	id := strconv.Itoa(ID)
 	// 发送服务器端 v2ray 的状态
 	go func() {
 		for {
-			err := conn.WriteMessage(websocket.TextMessage, []byte(status+":"+Protocol+":"+id))
+			err := conn.WriteJSON(gin.H{
+				"running":  Running,
+				"protocol": Protocol,
+				"id":       ID,
+			})
 			if err != nil {
 				break
 			}
