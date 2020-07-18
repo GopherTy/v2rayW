@@ -10,7 +10,7 @@
     },
     "HTTP": {
         "TLS": false,
-        "Address": ":9200",
+        "Address": "localhost:9200",
         "CertFile": "",
         "KeyFile": ""
     },
@@ -22,6 +22,6 @@
         "GinLogsPath": ""
     },
     "Redis": {
-        "Address": ":6379"
+        "Address": "localhost:6379"
     }
 }
