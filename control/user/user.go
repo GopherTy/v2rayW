@@ -151,13 +151,19 @@ func (Dispatcher) Logout(c *gin.Context) {
 	access, err := token.ExtractTokenMetadata(c.Request)
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusUnauthorized, "unauthorized")
+		c.JSON(http.StatusUnauthorized, model.BackToFrontEndData{
+			Code:  serve.StatusUnauthorized,
+			Error: "unauthorized",
+		})
 		return
 	}
 	deleted, err := token.DeleteAuth(access.AccessUUID)
 	if err != nil || deleted == 0 {
 		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusUnauthorized, "unauthorized")
+		c.JSON(http.StatusUnauthorized, model.BackToFrontEndData{
+			Code:  serve.StatusUnauthorized,
+			Error: "unauthorized",
+		})
 		return
 	}
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
@@ -170,21 +176,36 @@ func (Dispatcher) Logout(c *gin.Context) {
 
 // Passwd 修改密码
 func (Dispatcher) Passwd(c *gin.Context) {
-	var param map[string]interface{}
+	var param ParamPasswd
 	err := c.ShouldBindWith(&param, binding.Default(c.Request.Method, c.ContentType()))
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.String(http.StatusInternalServerError, "参数传递与后端不一致")
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusParamNotMatched,
+			Description: "参数传递与后端不一致",
+			Error:       err.Error(),
+		})
 		return
 	}
 
 	engine := db.Engine()
-	_, err = engine.Table(users.User{}).Cols("passwd").ID(param["uid"]).Update(param["passwd"])
+	_, err = engine.Table("user").ID(param.UID).Update(&users.User{
+		Passwd: param.Passwd,
+	})
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.String(http.StatusInternalServerError, "修改密码出错")
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusDBError,
+			Description: "修改密码出错",
+			Error:       err.Error(),
+		})
 		return
 	}
 
-	c.String(http.StatusOK, "修改成功")
+	c.JSON(http.StatusOK, model.BackToFrontEndData{
+		Code: serve.StatusOK,
+		Data: map[string]interface{}{
+			"msg": "修改成功",
+		},
+	})
 }

@@ -17,7 +17,7 @@ func Init() {
 	// 调用执行注册器
 	registers := []IRegister{
 		config.Register{},    // 配置
-		logger.Register{},    // 日志
+		logger.Register{},    // 系统日志
 		db.Register{},        // 数据库
 		v2raylogs.Register{}, // v2ray日志
 	}

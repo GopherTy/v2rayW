@@ -3,6 +3,9 @@ package protocol
 import (
 	"net/http"
 
+	"github.com/gopherty/v2ray-web/model"
+	"github.com/gopherty/v2ray-web/serve"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gopherty/v2ray-web/db"
@@ -20,27 +23,41 @@ func (Dispatcher) ListProxyProtocols(c *gin.Context) {
 	err := c.ShouldBindWith(&params, binding.Default(c.Request.Method, c.ContentType()))
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.String(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusUnprocessableEntity, model.BackToFrontEndData{
+			Code:        serve.StatusServerError,
+			Description: "前端请求参数和后端绑定参数不匹配",
+			Error:       err.Error(),
+		})
 		return
 	}
 
+	// 用事务进行处理，因为目前只支持 vmess 协议。
 	engine := db.Engine()
 	session := engine.NewSession()
 	defer session.Close()
 
+	// 开启事务
 	session.Begin()
+	defer session.Rollback()
+
 	var v2rays []proxy.Vmess
 	err = session.Table("vmess").Where("user_id = ?", params["uid"]).Find(&v2rays)
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		session.Rollback()
-		c.String(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusDBError,
+			Description: "数据库错误",
+			Error:       err.Error(),
+		})
 		return
 	}
-
 	session.Commit()
-	c.JSON(http.StatusOK, gin.H{
-		"vmess": v2rays,
+
+	c.JSON(http.StatusOK, model.BackToFrontEndData{
+		Code: serve.StatusOK,
+		Data: map[string]interface{}{
+			"vmess": v2rays,
+		},
 	})
 }
 
@@ -51,7 +68,11 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 	err := c.ShouldBindWith(&params, binding.Default(c.Request.Method, c.ContentType()))
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.String(http.StatusUnprocessableEntity, "传递参数与后端不一致")
+		c.JSON(http.StatusUnprocessableEntity, model.BackToFrontEndData{
+			Code:        serve.StatusParamNotMatched,
+			Description: "前端请求参数和后端绑定参数不匹配",
+			Error:       err.Error(),
+		})
 		return
 	}
 
@@ -77,16 +98,26 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 		_, err := engine.Table(v2ray.TableName()).Insert(v2ray)
 		if err != nil {
 			logger.Logger().Error(err.Error())
-			c.String(http.StatusInternalServerError, "增加协议失败")
+			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+				Code:        serve.StatusDBError,
+				Description: "数据库错误",
+				Error:       err.Error(),
+			})
 			return
 		}
 	default:
-		c.String(http.StatusInternalServerError, "不支持该协议")
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:  serve.StatusServerError,
+			Error: "不支持该协议",
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"msg": "增加成功",
+	c.JSON(http.StatusOK, model.BackToFrontEndData{
+		Code: serve.StatusOK,
+		Data: map[string]interface{}{
+			"msg": "增加成功",
+		},
 	})
 }
 
@@ -96,7 +127,11 @@ func (Dispatcher) DeleteProxyProtocol(c *gin.Context) {
 	err := c.ShouldBindWith(&params, binding.Default(c.Request.Method, c.ContentType()))
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.String(http.StatusUnprocessableEntity, err.Error())
+		c.JSON(http.StatusUnprocessableEntity, model.BackToFrontEndData{
+			Code:        serve.StatusParamNotMatched,
+			Description: "前端请求参数和后端绑定参数不匹配",
+			Error:       err.Error(),
+		})
 		return
 	}
 
@@ -112,18 +147,30 @@ func (Dispatcher) DeleteProxyProtocol(c *gin.Context) {
 		protocolName = "undefine"
 	}
 	if protocolName == "" || protocolName == "undefine" {
-		c.String(http.StatusInternalServerError, "不支持该协议")
-		return
-	}
-	engine := db.Engine()
-	_, err = engine.Table(protocolName).Delete(bean)
-	if err != nil {
-		c.String(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:  serve.StatusServerError,
+			Error: "不支持该协议",
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"msg": "删除成功",
+	engine := db.Engine()
+	_, err = engine.Table(protocolName).Delete(bean)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusDBError,
+			Description: "数据库错误",
+			Error:       err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, model.BackToFrontEndData{
+		Code: serve.StatusOK,
+		Data: map[string]interface{}{
+			"msg": "删除成功",
+		},
 	})
 }
 
@@ -133,7 +180,11 @@ func (Dispatcher) UpdateProxyProtocol(c *gin.Context) {
 	err := c.ShouldBindWith(&params, binding.Default(c.Request.Method, c.ContentType()))
 	if err != nil {
 		logger.Logger().Error(err.Error())
-		c.String(http.StatusUnprocessableEntity, "传递参数与后端不一致")
+		c.JSON(http.StatusUnprocessableEntity, model.BackToFrontEndData{
+			Code:        serve.StatusParamNotMatched,
+			Description: "前端请求参数和后端绑定参数不匹配",
+			Error:       err.Error(),
+		})
 		return
 	}
 
@@ -157,15 +208,25 @@ func (Dispatcher) UpdateProxyProtocol(c *gin.Context) {
 		_, err := engine.Table(v2ray.TableName()).Where(" id = ?", params.ID).Update(v2ray)
 		if err != nil {
 			logger.Logger().Error(err.Error())
-			c.String(http.StatusInternalServerError, err.Error())
+			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+				Code:        serve.StatusDBError,
+				Description: "数据库错误",
+				Error:       err.Error(),
+			})
 			return
 		}
 	default:
-		c.String(http.StatusInternalServerError, "不支持该协议")
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:  serve.StatusServerError,
+			Error: "不支持该协议",
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"msg": "修改成功",
+	c.JSON(http.StatusOK, model.BackToFrontEndData{
+		Code: serve.StatusOK,
+		Data: map[string]interface{}{
+			"msg": "修改成功",
+		},
 	})
 }

@@ -12,3 +12,9 @@ type ParamJoin struct {
 	Password string `form:"password" json:"password" binding:"required"`
 	Email    string `form:"email" json:"email" binding:"required"`
 }
+
+// ParamPasswd accept parameters pass from network.
+type ParamPasswd struct {
+	UID    int    `form:"uid"json:"uid" binding:"required"`
+	Passwd string `form:"passwd" json:"passwd" binding:"required"`
+}

@@ -31,6 +31,13 @@ import (
 // 启动成功后保存实例的状态用于关闭
 var (
 	instance *core.Instance
+	upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
 
 	// v2ray 服务状态, true 代表运行，false 代表停止。
 	Protocol string // 协议名称
@@ -69,7 +76,7 @@ func (Dispatcher) Start(c *gin.Context) {
 		}
 
 		// 获取到控制台资源
-		_, w, _ := v2raylogs.Source()
+		_, w := v2raylogs.Source()
 		os.Stdout = w
 
 		// 保存 v2ray 的状态
@@ -177,11 +184,6 @@ func (Dispatcher) Stop(c *gin.Context) {
 		return
 	}
 
-	// 交回控制台资源
-	_, _, stdout := v2raylogs.Source()
-	os.Stdout = stdout
-	stdout = nil
-
 	// 保存 v2ray 的状态
 	Protocol = ""
 	ID = 0
@@ -198,13 +200,6 @@ func (Dispatcher) Stop(c *gin.Context) {
 // Logs v2ray 启动后日志输出接口
 func (Dispatcher) Logs(c *gin.Context) {
 	// 获取日志输出
-	upgrader := websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
-	}
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	defer conn.Close()
 	if err != nil {
@@ -217,6 +212,7 @@ func (Dispatcher) Logs(c *gin.Context) {
 	err = token.ValidWSToken(c.Request)
 	if err != nil {
 		logger.Logger().Error(err.Error())
+
 		closed := conn.CloseHandler()
 		err = closed(5001, "unauthrizationed")
 		if err != nil {
@@ -231,14 +227,10 @@ func (Dispatcher) Logs(c *gin.Context) {
 		for {
 			select {
 			case msg := <-v2raylogs.LogsMsg():
-				// logger.Logger().Info(string(msg))
 				err = conn.WriteMessage(websocket.TextMessage, msg)
 				if err != nil {
-					_, _, stdout := v2raylogs.Source()
-					os.Stdout = stdout
-					stdout = nil
 					logger.Logger().Error(err.Error())
-					break
+					return
 				}
 			case <-signal:
 				return
@@ -251,9 +243,6 @@ func (Dispatcher) Logs(c *gin.Context) {
 		_, _, err := conn.ReadMessage()
 		if err != nil {
 			signal <- 1 // 中断发送消息操作
-			// _, _, stdout := v2raylogs.Source()
-			// os.Stdout = stdout
-			// stdout = nil
 			logger.Logger().Error(err.Error())
 			break
 		}
@@ -262,13 +251,6 @@ func (Dispatcher) Logs(c *gin.Context) {
 
 // Status 服务器端 v2ray 的状态
 func (Dispatcher) Status(c *gin.Context) {
-	upgrader := websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
-	}
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	defer conn.Close()
 	if err != nil {
@@ -315,7 +297,7 @@ func (Dispatcher) Status(c *gin.Context) {
 }
 
 // parmasToJSON 将 v2ray 启动参数转化为配置文件
-func parmasToJSON(c *gin.Context) (name string, id int, err error) {
+func parmasToJSON(c *gin.Context) (protocol string, id int, err error) {
 	// 绑定参数
 	var param ParamStart
 	err = c.ShouldBindWith(&param, binding.Default(c.Request.Method, c.ContentType()))
