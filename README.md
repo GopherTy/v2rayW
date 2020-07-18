@@ -18,7 +18,7 @@
 
 打开 bin 文件夹下的 `config.json`  文件
 
-```json
+```go
 {  
     // MySQL 数据库配置
     "DB": {   
@@ -58,7 +58,13 @@
 
 **默认本地浏览器配置代理端口为 1080，协议为 sockt5。暂不支持修改！！！**  
 
+![local_config](https://github.com/GopherTy/v2ray-web/blob/master/assets/local_proxy_config.png)
+
 在开启前后端服务器后，打开浏览器输入链接进行使用默认为 http://localhost:4200。
+
+![主页](https://github.com/GopherTy/v2ray-web/blob/master/assets/index.png)
+
+![v2ray](https://github.com/GopherTy/v2ray-web/blob/master/assets/v2ray.png)
 
 ## Contributing
 
