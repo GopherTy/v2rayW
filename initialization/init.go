@@ -1,10 +1,11 @@
 package initialization
 
 import (
-	"github.com/gopherty/v2ray-web/config"
-	"github.com/gopherty/v2ray-web/db"
-	"github.com/gopherty/v2ray-web/logger"
-	"github.com/gopherty/v2ray-web/v2raylogs"
+	"github.com/gopherty/v2rayW/config"
+	"github.com/gopherty/v2rayW/db"
+	"github.com/gopherty/v2rayW/logger"
+	"github.com/gopherty/v2rayW/v2raylogs"
+	"github.com/gopherty/v2rayW/view"
 )
 
 // IRegister 初始化对象注册接口
@@ -18,6 +19,7 @@ func Init() {
 	registers := []IRegister{
 		config.Register{},    // 配置
 		logger.Register{},    // 系统日志
+		view.Register{},      // 视图资源
 		db.Register{},        // 数据库
 		v2raylogs.Register{}, // v2ray日志
 	}

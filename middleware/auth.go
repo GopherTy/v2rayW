@@ -3,9 +3,8 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/gopherty/v2ray-web/token"
-
 	"github.com/gin-gonic/gin"
+	"github.com/gopherty/v2rayW/token"
 )
 
 // TokenAuthMiddleware .

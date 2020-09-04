@@ -1,14 +1,14 @@
 package db
 
 import (
-	"github.com/gopherty/v2ray-web/config"
-	"github.com/gopherty/v2ray-web/logger"
-	"github.com/gopherty/v2ray-web/model/auth"
-	"github.com/gopherty/v2ray-web/model/proxy"
-	"github.com/gopherty/v2ray-web/model/users"
-
 	"github.com/go-redis/redis/v7"
 	"github.com/go-xorm/xorm"
+
+	"github.com/gopherty/v2rayW/config"
+	"github.com/gopherty/v2rayW/logger"
+	"github.com/gopherty/v2rayW/model/auth"
+	"github.com/gopherty/v2rayW/model/proxy"
+	"github.com/gopherty/v2rayW/model/users"
 )
 
 var (

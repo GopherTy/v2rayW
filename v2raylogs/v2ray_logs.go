@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"os"
 
-	"github.com/gopherty/v2ray-web/logger"
+	"github.com/gopherty/v2rayW/logger"
 )
 
 // 捕获控制台后的资源

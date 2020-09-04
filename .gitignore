@@ -16,7 +16,7 @@
 vendor/
 
 # 自定义
-bin/v2ray-web*
+bin/v2ray*
 bin/log
 bin/v2ray.json
 bin/test.json

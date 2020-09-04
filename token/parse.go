@@ -7,9 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gopherty/v2ray-web/db"
-
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gopherty/v2rayW/db"
 )
 
 // parse 包解析前端传过来的 token 字符串用于认证。

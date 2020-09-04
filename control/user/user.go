@@ -5,17 +5,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gopherty/v2ray-web/model"
-
-	"github.com/gopherty/v2ray-web/token"
-
-	"github.com/gopherty/v2ray-web/db"
-	"github.com/gopherty/v2ray-web/model/users"
-	"github.com/gopherty/v2ray-web/serve"
-
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	"github.com/gopherty/v2ray-web/logger"
+
+	"github.com/gopherty/v2rayW/db"
+	"github.com/gopherty/v2rayW/logger"
+	"github.com/gopherty/v2rayW/model"
+	"github.com/gopherty/v2rayW/model/users"
+	"github.com/gopherty/v2rayW/serve"
+	"github.com/gopherty/v2rayW/token"
 )
 
 // Dispatcher 登陆控制器

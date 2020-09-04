@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/gopherty/v2ray-web/utils"
+	"github.com/gopherty/v2rayW/utils"
 )
 
 // Config 全局JSON配置对象

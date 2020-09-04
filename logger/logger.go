@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gopherty/v2ray-web/config"
-	"github.com/gopherty/v2ray-web/utils"
+	"github.com/gopherty/v2rayW/config"
+	"github.com/gopherty/v2rayW/utils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

@@ -7,11 +7,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/gopherty/v2ray-web/v2raylogs"
+	"github.com/gopherty/v2rayW/logger"
+	"github.com/gopherty/v2rayW/model"
+	"github.com/gopherty/v2rayW/serve"
+	"github.com/gopherty/v2rayW/token"
+	"github.com/gopherty/v2rayW/utils"
+	"github.com/gopherty/v2rayW/v2raylogs"
 
 	"github.com/gin-gonic/gin/binding"
-	"github.com/gopherty/v2ray-web/model"
-	"github.com/gopherty/v2ray-web/token"
 	"github.com/gorilla/websocket"
 
 	// v2ray core 启动的依赖
@@ -22,10 +25,6 @@ import (
 	"v2ray.com/core"
 
 	"github.com/gin-gonic/gin"
-
-	"github.com/gopherty/v2ray-web/logger"
-	"github.com/gopherty/v2ray-web/serve"
-	"github.com/gopherty/v2ray-web/utils"
 )
 
 // 启动成功后保存实例的状态用于关闭

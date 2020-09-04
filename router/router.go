@@ -1,8 +1,8 @@
 package router
 
 import (
-	"github.com/gopherty/v2ray-web/control"
-	"github.com/gopherty/v2ray-web/middleware"
+	"github.com/gopherty/v2rayW/control"
+	"github.com/gopherty/v2rayW/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,6 +17,14 @@ func (Router) Route(engine *gin.Engine) {
 	var ctl control.Controller
 
 	// 非组
+	// view
+	engine.GET("/", ctl.ViewDispathcer.Redirect)
+	engine.GET("/index", ctl.ViewDispathcer.Redirect)
+	engine.GET("/index.html", ctl.ViewDispathcer.Redirect)
+	viewGroup := engine.Group("/view")
+	viewGroup.GET(`/*path`, ctl.ViewDispathcer.View)
+
+	// refresh token
 	engine.POST("/api/token/refresh", ctl.RefreshDispathce.RefreshToken) // 测试接口注册
 
 	// 组

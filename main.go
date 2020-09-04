@@ -7,12 +7,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/gopherty/v2rayW/statik"
 
-	"github.com/gopherty/v2ray-web/config"
-	"github.com/gopherty/v2ray-web/initialization"
-	"github.com/gopherty/v2ray-web/logger"
-	"github.com/gopherty/v2ray-web/router"
-	"github.com/gopherty/v2ray-web/utils"
+	"github.com/gopherty/v2rayW/config"
+	"github.com/gopherty/v2rayW/initialization"
+	"github.com/gopherty/v2rayW/logger"
+	"github.com/gopherty/v2rayW/router"
+	"github.com/gopherty/v2rayW/utils"
 )
 
 var (
