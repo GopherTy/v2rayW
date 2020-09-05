@@ -78,9 +78,10 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 
 	// 获取数据库对象
 	engine := db.Engine()
+	var v2ray *proxy.Vmess
 	switch params.Protocol {
 	case "vmess":
-		v2ray := &proxy.Vmess{
+		v2ray = &proxy.Vmess{
 			UID:         uint64(params.UID),
 			Name:        params.Name,
 			Protocol:    params.Protocol,
@@ -95,7 +96,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 			Path:        params.Path,
 			Domains:     params.Domains,
 		}
-		_, err := engine.Table(v2ray.TableName()).Insert(v2ray)
+		_, err = engine.Table(v2ray.TableName()).Insert(v2ray)
 		if err != nil {
 			logger.Logger().Error(err.Error())
 			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -117,6 +118,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 		Code: serve.StatusOK,
 		Data: map[string]interface{}{
 			"msg": "增加成功",
+			"id":  v2ray.ID,
 		},
 	})
 }
@@ -203,9 +205,10 @@ func (Dispatcher) UpdateProxyProtocol(c *gin.Context) {
 			Network:     params.Network,
 			NetSecurity: params.NetSecurity,
 			Path:        params.Path,
+			Protocol:    params.Protocol,
 			Domains:     params.Domains,
 		}
-		_, err := engine.Table(v2ray.TableName()).Where(" id = ?", params.ID).Update(v2ray)
+		_, err := engine.Table(v2ray.TableName()).AllCols().Where(" id = ?", params.ID).Update(v2ray)
 		if err != nil {
 			logger.Logger().Error(err.Error())
 			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{

@@ -39,9 +39,7 @@ var (
 	}
 
 	// v2ray 服务状态, true 代表运行，false 代表停止。
-	Protocol string // 协议名称
-	ID       int    // 协议id
-	Running  = false
+	stat = &Status{}
 )
 
 // Dispatcher v2ray 功能相关的控制器
@@ -58,36 +56,6 @@ func (Dispatcher) Start(c *gin.Context) {
 			Code:        serve.StatusParamNotMatched,
 			Description: "解析参数错误",
 			Error:       err.Error(),
-		})
-		return
-	}
-
-	if instance != nil {
-		err := instance.Start()
-		if err != nil {
-			logger.Logger().Error(err.Error())
-			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
-				Code:        serve.StatusV2rayError,
-				Description: "v2ray 启动错误",
-				Error:       err.Error(),
-			})
-			return
-		}
-
-		// 获取到控制台资源
-		_, w := v2raylogs.Source()
-		os.Stdout = w
-
-		// 保存 v2ray 的状态
-		Protocol = protocol
-		ID = id
-		Running = true
-
-		c.JSON(http.StatusOK, model.BackToFrontEndData{
-			Code: serve.StatusOK,
-			Data: map[string]interface{}{
-				"msg": "v2ray 服务启动成功",
-			},
 		})
 		return
 	}
@@ -115,7 +83,7 @@ func (Dispatcher) Start(c *gin.Context) {
 	})
 
 	// 解析 v2ray 的配置文件
-	config, err := core.LoadConfig("json", "v2ray.json", file)
+	config, err := core.LoadConfig("json", path, file)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -150,9 +118,11 @@ func (Dispatcher) Start(c *gin.Context) {
 	}
 
 	// 保存 v2ray 的状态
-	Protocol = protocol
-	ID = id
-	Running = true
+	stat.mu.Lock()
+	stat.id = id
+	stat.protocol = protocol
+	stat.running = true
+	stat.mu.Unlock()
 
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
 		Code: serve.StatusOK,
@@ -184,9 +154,9 @@ func (Dispatcher) Stop(c *gin.Context) {
 	}
 
 	// 保存 v2ray 的状态
-	Protocol = ""
-	ID = 0
-	Running = false
+	stat.mu.Lock()
+	stat.running = false
+	stat.mu.Unlock()
 
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
 		Code: serve.StatusOK,
@@ -198,6 +168,8 @@ func (Dispatcher) Stop(c *gin.Context) {
 
 // Logs v2ray 启动后日志输出接口
 func (Dispatcher) Logs(c *gin.Context) {
+	// 将 token 加入到 websocket 的子协议中，不设置 chrome 浏览器，不能使用 websocket。
+	upgrader.Subprotocols = []string{c.GetHeader("Sec-WebSocket-Protocol")}
 	// 获取日志输出
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	defer conn.Close()
@@ -250,6 +222,8 @@ func (Dispatcher) Logs(c *gin.Context) {
 
 // Status 服务器端 v2ray 的状态
 func (Dispatcher) Status(c *gin.Context) {
+	// 将 token 加入到 websocket 的子协议中，不设置 chrome 浏览器，不能使用 websocket。
+	upgrader.Subprotocols = []string{c.GetHeader("Sec-WebSocket-Protocol")}
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	defer conn.Close()
 	if err != nil {
@@ -274,9 +248,9 @@ func (Dispatcher) Status(c *gin.Context) {
 	go func() {
 		for {
 			err := conn.WriteJSON(gin.H{
-				"running":  Running,
-				"protocol": Protocol,
-				"id":       ID,
+				"running":  stat.running,
+				"protocol": stat.protocol,
+				"id":       stat.id,
 			})
 			if err != nil {
 				break
