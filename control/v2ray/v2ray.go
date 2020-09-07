@@ -200,7 +200,11 @@ func (Dispatcher) Logs(c *gin.Context) {
 			case msg := <-v2raylogs.LogsMsg():
 				err = conn.WriteMessage(websocket.TextMessage, msg)
 				if err != nil {
-					logger.Logger().Error(err.Error())
+					if websocket.IsCloseError(err, websocket.CloseGoingAway) {
+						logger.Logger().Warn(err.Error())
+					} else {
+						logger.Logger().Error(err.Error())
+					}
 					return
 				}
 			case <-signal:
@@ -214,7 +218,11 @@ func (Dispatcher) Logs(c *gin.Context) {
 		_, _, err := conn.ReadMessage()
 		if err != nil {
 			signal <- 1 // 中断发送消息操作
-			logger.Logger().Error(err.Error())
+			if websocket.IsCloseError(err, websocket.CloseGoingAway) {
+				logger.Logger().Warn(err.Error())
+			} else {
+				logger.Logger().Error(err.Error())
+			}
 			break
 		}
 	}
@@ -244,18 +252,30 @@ func (Dispatcher) Status(c *gin.Context) {
 		return
 	}
 
+	// 信号量，用于关闭发送消息协程。
+	signal := make(chan int)
+	timer := time.NewTimer(time.Second)
 	// 发送服务器端 v2ray 的状态
 	go func() {
 		for {
-			err := conn.WriteJSON(gin.H{
-				"running":  stat.running,
-				"protocol": stat.protocol,
-				"id":       stat.id,
-			})
-			if err != nil {
-				break
+			select {
+			case <-timer.C:
+				err := conn.WriteJSON(gin.H{
+					"running":  stat.running,
+					"protocol": stat.protocol,
+					"id":       stat.id,
+				})
+				if err != nil {
+					if websocket.IsCloseError(err, websocket.CloseGoingAway) {
+						logger.Logger().Warn(err.Error())
+					} else {
+						logger.Logger().Error(err.Error())
+					}
+					return
+				}
+			case <-signal:
+				return
 			}
-			time.Sleep(1e9)
 		}
 	}()
 
@@ -263,7 +283,12 @@ func (Dispatcher) Status(c *gin.Context) {
 	for {
 		_, _, err := conn.ReadMessage()
 		if err != nil {
-			logger.Logger().Error(err.Error())
+			signal <- 1 // 发送关闭信号
+			if websocket.IsCloseError(err, websocket.CloseGoingAway) {
+				logger.Logger().Warn(err.Error())
+			} else {
+				logger.Logger().Error(err.Error())
+			}
 			break
 		}
 	}
