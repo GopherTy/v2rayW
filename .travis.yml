@@ -1,6 +1,12 @@
 language: go
 
+os: linux
+
+dist: xenial
+
 go:
 - "1.12"
+
+GO111MODULE: on
 
 script: ./build.sh s view && ./build.sh l 
