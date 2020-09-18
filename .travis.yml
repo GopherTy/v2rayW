@@ -9,5 +9,6 @@ go:
 env:
   - GO111MODULE=on
 script:
+  - go install github.com/rakyll/statik
   - ./build.sh s view 
   - ./build.sh l 
