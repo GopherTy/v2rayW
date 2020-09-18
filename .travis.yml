@@ -1,0 +1,6 @@
+language: go
+
+go:
+- "1.12"
+
+script: ./build.sh s view && ./build.sh l 
