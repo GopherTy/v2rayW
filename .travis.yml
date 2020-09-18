@@ -6,7 +6,8 @@ dist: xenial
 
 go:
 - "1.12"
-
-GO111MODULE: on
-
-script: ./build.sh s view && ./build.sh l 
+env:
+  - GO111MODULE=on
+script:
+  - ./build.sh s view 
+  - ./build.sh l 
