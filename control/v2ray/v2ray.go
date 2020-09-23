@@ -76,11 +76,20 @@ func (Dispatcher) Start(c *gin.Context) {
 
 	// 需要 json 格式注册解析器，默认为 protobuf。
 	// 注册配置文件加载器
-	core.RegisterConfigLoader(&core.ConfigFormat{
+	err = core.RegisterConfigLoader(&core.ConfigFormat{
 		Name:      "JSON",
 		Extension: []string{"json"},
 		Loader:    loaderJSON,
 	})
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusServerError,
+			Description: "加载 v2ray 配置文件出错",
+			Error:       err.Error(),
+		})
+		return
+	}
 
 	// 解析 v2ray 的配置文件
 	config, err := core.LoadConfig("json", path, file)
@@ -172,11 +181,11 @@ func (Dispatcher) Logs(c *gin.Context) {
 	upgrader.Subprotocols = []string{c.GetHeader("Sec-WebSocket-Protocol")}
 	// 获取日志输出
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-	defer conn.Close()
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		return
 	}
+	defer conn.Close()
 
 	// 先将 http 请求升级为 websocket ，在验证 token 是否过期，如果过期则返回 websocket 中的保留状态码 5000-10000
 	// 客户端知道 token 过期，就将刷新 token 或 重新登录后再次请求该接口。
@@ -233,11 +242,11 @@ func (Dispatcher) Status(c *gin.Context) {
 	// 将 token 加入到 websocket 的子协议中，不设置 chrome 浏览器，不能使用 websocket。
 	upgrader.Subprotocols = []string{c.GetHeader("Sec-WebSocket-Protocol")}
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-	defer conn.Close()
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		return
 	}
+	defer conn.Close()
 
 	// 先将 http 请求升级为 websocket ，在验证 token 是否过期，如果过期则返回 websocket 中的保留状态码 5000-10000
 	// 客户端知道 token 过期，就将刷新 token 或 重新登录后再次请求该接口。

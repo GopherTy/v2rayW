@@ -76,11 +76,11 @@ func CreateAuth(userID uint64, token *Token) (err error) {
 	atExp := time.Unix(token.AtExpires, 0)
 	rtExp := time.Unix(token.RtExpires, 0)
 
-	err = db.Client().Set(token.AccessUUID, strconv.Itoa(int(userID)), atExp.Sub(time.Now())).Err()
+	err = db.Client().Set(token.AccessUUID, strconv.Itoa(int(userID)), time.Until(atExp)).Err()
 	if err != nil {
 		return
 	}
-	err = db.Client().Set(token.RefreshUUID, strconv.Itoa(int(userID)), rtExp.Sub(time.Now())).Err()
+	err = db.Client().Set(token.RefreshUUID, strconv.Itoa(int(userID)), time.Until(rtExp)).Err()
 	if err != nil {
 		return
 	}

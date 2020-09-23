@@ -13,10 +13,7 @@ import (
 func IsFileOrDirExists(src string) bool {
 	_, err := os.Stat(src)
 	if err != nil {
-		if os.IsExist(err) {
-			return true
-		}
-		return false
+		return os.IsExist(err)
 	}
 
 	return true
@@ -81,10 +78,13 @@ func CreatePath(path string) (err error) {
 }
 
 // MD5 md5加密
-func MD5(src interface{}) (dst string) {
+func MD5(src interface{}) (dst string, err error) {
 	if v, ok := src.(string); ok {
 		hash := md5.New()
-		hash.Write([]byte(v))
+		_, err = hash.Write([]byte(v))
+		if err != nil {
+			return
+		}
 		dst = hex.EncodeToString(hash.Sum(nil))
 	}
 

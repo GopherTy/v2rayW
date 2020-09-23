@@ -58,10 +58,14 @@ func main() {
 	var r router.Router
 	r.Route(engine)
 
+	var err error
 	// 验证服务器是否以HTTPS的方式启动
 	if cnf.HTTP.TLS {
-		engine.RunTLS(cnf.HTTP.Address, cnf.HTTP.CertFile, cnf.HTTP.KeyFile)
+		err = engine.RunTLS(cnf.HTTP.Address, cnf.HTTP.CertFile, cnf.HTTP.KeyFile)
 	} else {
-		engine.Run(cnf.HTTP.Address)
+		err = engine.Run(cnf.HTTP.Address)
+	}
+	if err != nil {
+		logger.Logger().Fatal(err.Error())
 	}
 }

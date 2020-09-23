@@ -43,6 +43,9 @@ func (Dispatcher) View(c *gin.Context) {
 		if os.IsNotExist(err) {
 			path = `/index.html`
 			f, err = fs.Open(path)
+			if err != nil {
+				handleError(c, err)
+			}
 		}
 	}
 	defer f.Close()

@@ -56,7 +56,7 @@ func (Dispatcher) RefreshToken(c *gin.Context) {
 
 	// 将 token 存入到 redis 中。
 	atExp := time.Unix(t.AtExpires, 0)
-	err = db.Client().Set(t.AccessUUID, strconv.Itoa(int(userID)), atExp.Sub(time.Now())).Err()
+	err = db.Client().Set(t.AccessUUID, strconv.Itoa(int(userID)), time.Until(atExp)).Err()
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
