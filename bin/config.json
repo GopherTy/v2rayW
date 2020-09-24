@@ -18,8 +18,7 @@
         "Level": "debug",
         "Encoding": "console",
         "Development": false,
-        "AppLogsPath": "",
-        "GinLogsPath": ""
+        "AppLogsPath": ""
     },
     "Redis": {
         "Address": "localhost:6379"

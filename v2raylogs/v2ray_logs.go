@@ -1,16 +1,12 @@
 package v2raylogs
 
 import (
-	"bufio"
 	"os"
-
-	"github.com/gopherty/v2rayW/logger"
 )
 
 // 捕获控制台后的资源
 var (
-	r, w *os.File
-	msg  chan []byte // 日志消息通过通道发送
+	r, w, stdout *os.File
 )
 
 // Register v2ray日志注册器
@@ -19,40 +15,19 @@ type Register struct {
 
 // Regist 实现 IRegister 接口，为了捕获 v2ray 启动后控制台的日志输出。
 func (Register) Regist() {
-	var err error
-	// 日志消息长度为 100 条
-	msg = make(chan []byte, 100)
-
-	// 启动后捕获控制台
-	stdout := os.Stdout
-	r, w, err = os.Pipe()
-	if err != nil {
-		logger.Logger().Fatal(err.Error())
-	}
-	os.Stdout = w
-	reader := bufio.NewReader(r)
-
-	go func() {
-		for {
-			logs, err := reader.ReadBytes('\n')
-			if err != nil {
-				close(msg)
-				os.Stdout = stdout
-				stdout = nil
-				logger.Logger().Error(err.Error())
-				break
-			}
-			msg <- logs
-		}
-	}()
-}
-
-// LogsMsg 日志消息队列
-func LogsMsg() chan []byte {
-	return msg
+	// var err error
+	// // 启动后捕获控制台
+	// stdout = os.Stdout
+	// r, w, err = os.Pipe()
+	// if err != nil {
+	// 	os.Stdout = stdout
+	// 	stdout = nil
+	// 	logger.Logger().Fatal(err.Error())
+	// }
+	// os.Stdout = w
 }
 
 // Source 捕获控制台后的资源，用于相应的处理。
-func Source() (rF *os.File, wF *os.File) {
-	return r, w
+func Source() (rF, wF, stdOut *os.File) {
+	return r, w, stdout
 }

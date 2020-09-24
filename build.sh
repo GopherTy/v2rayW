@@ -28,7 +28,7 @@ case $1 in
     ;;
     l|linux)
         export GOOS=linux
-        cd $DirRoot && go build -ldflags "-s -w" -o "$DirRoot/bin/$Target"
+        cd $DirRoot && go build -race -ldflags "-s -w" -o "$DirRoot/bin/$Target"
     ;; 
     w|windows)
         export  GOOS=windows

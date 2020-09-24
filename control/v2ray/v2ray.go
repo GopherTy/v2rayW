@@ -1,18 +1,19 @@
 package v2ray
 
 import (
+	"bufio"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"time"
+
+	"github.com/gopherty/broadcaster"
 
 	"github.com/gopherty/v2rayW/logger"
 	"github.com/gopherty/v2rayW/model"
 	"github.com/gopherty/v2rayW/serve"
 	"github.com/gopherty/v2rayW/token"
 	"github.com/gopherty/v2rayW/utils"
-	"github.com/gopherty/v2rayW/v2raylogs"
 
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gorilla/websocket"
@@ -40,6 +41,13 @@ var (
 
 	// v2ray 服务状态, true 代表运行，false 代表停止。
 	stat = &Status{}
+	// 用于发送服务器状态的通道
+	statCh = make(chan *Status, 1)
+
+	// 日志输出相关变量
+	r, w, stdout *os.File
+	bc           broadcaster.Broadcaster
+	started      bool
 )
 
 // Dispatcher v2ray 功能相关的控制器
@@ -76,20 +84,20 @@ func (Dispatcher) Start(c *gin.Context) {
 
 	// 需要 json 格式注册解析器，默认为 protobuf。
 	// 注册配置文件加载器
-	err = core.RegisterConfigLoader(&core.ConfigFormat{
-		Name:      "JSON",
-		Extension: []string{"json"},
-		Loader:    loaderJSON,
-	})
-	if err != nil {
-		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
-			Code:        serve.StatusServerError,
-			Description: "加载 v2ray 配置文件出错",
-			Error:       err.Error(),
-		})
-		return
-	}
+	// err = core.RegisterConfigLoader(&core.ConfigFormat{
+	// 	Name:      "JSON",
+	// 	Extension: []string{"json"},
+	// 	Loader:    loaderJSON,
+	// })
+	// if err != nil {
+	// 	logger.Logger().Error(err.Error())
+	// 	c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+	// 		Code:        serve.StatusServerError,
+	// 		Description: "加载 v2ray 配置文件出错",
+	// 		Error:       err.Error(),
+	// 	})
+	// 	return
+	// }
 
 	// 解析 v2ray 的配置文件
 	config, err := core.LoadConfig("json", path, file)
@@ -115,8 +123,27 @@ func (Dispatcher) Start(c *gin.Context) {
 		return
 	}
 
+	// 在 v2ray 启动之前捕获控制台输出。
+	stdout = os.Stdout
+	r, w, err = os.Pipe()
+	if err != nil {
+		os.Stdout = stdout
+		stdout = nil
+		w.Close()
+		bc.Close()
+		logger.Logger().Error(err.Error())
+		return
+	}
+	os.Stdout = w
+	reader := bufio.NewReader(r)
+
+	// 启动 v2ray
 	err = instance.Start()
 	if err != nil {
+		os.Stdout = stdout
+		stdout = nil
+		w.Close()
+		bc.Close()
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
 			Code:        serve.StatusV2rayError,
@@ -126,12 +153,31 @@ func (Dispatcher) Start(c *gin.Context) {
 		return
 	}
 
+	// 发送日志
+	go func() {
+		for {
+			logs, err := reader.ReadBytes('\n')
+			if err != nil {
+				logger.Logger().Error(err.Error())
+				break
+			}
+			err = bc.Publish(logs)
+			if err != nil {
+				logger.Logger().Error(err.Error())
+				break
+			}
+		}
+	}()
+
 	// 保存 v2ray 的状态
 	stat.mu.Lock()
 	stat.id = id
 	stat.protocol = protocol
 	stat.running = true
 	stat.mu.Unlock()
+
+	// 推送 v2ray 状态消息
+	statCh <- stat
 
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
 		Code: serve.StatusOK,
@@ -143,6 +189,25 @@ func (Dispatcher) Start(c *gin.Context) {
 
 // Stop 关闭 v2ray 服务
 func (Dispatcher) Stop(c *gin.Context) {
+	// 归还控制台
+	defer func() {
+		os.Stdout = stdout
+		stdout = nil
+		w.Close()
+	}()
+
+	// 关闭广播
+	defer func() {
+		logger.Logger().Sugar().Info("-------- stop bc ........", started)
+		if started {
+			started = false
+			err := bc.Close()
+			if err != nil {
+				logger.Logger().Sugar().Info("repete", err)
+			}
+		}
+	}()
+
 	if instance == nil {
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
 			Code:  serve.StatusV2rayError,
@@ -166,6 +231,9 @@ func (Dispatcher) Stop(c *gin.Context) {
 	stat.mu.Lock()
 	stat.running = false
 	stat.mu.Unlock()
+
+	// 推送 v2ray 状态消息
+	statCh <- stat
 
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
 		Code: serve.StatusOK,
@@ -201,22 +269,36 @@ func (Dispatcher) Logs(c *gin.Context) {
 		return
 	}
 
-	// 信号量，用于关闭发送消息协程。
-	signal := make(chan int)
+	// 开启广播器
+	logger.Logger().Sugar().Info("-------- start bc ........", started)
+	if !started {
+		bc = broadcaster.NewBroadcaster(0)
+		go bc.Run()
+		started = true
+	}
+
+	// 增加订阅
+	logs := make(chan interface{})
+	bc.Subscribe(logs)
+
 	go func() {
 		for {
 			select {
-			case msg := <-v2raylogs.LogsMsg():
-				err = conn.WriteMessage(websocket.TextMessage, msg)
-				if err != nil {
-					if websocket.IsCloseError(err, websocket.CloseGoingAway) {
-						logger.Logger().Warn(err.Error())
-					} else {
-						logger.Logger().Error(err.Error())
+			case log := <-logs:
+				if v, ok := log.([]byte); ok {
+					err = conn.WriteMessage(websocket.TextMessage, v)
+					if err != nil {
+						if websocket.IsCloseError(err, websocket.CloseGoingAway) {
+							logger.Logger().Warn(err.Error())
+						} else {
+							logger.Logger().Error(err.Error())
+						}
+						return
 					}
+				} else {
 					return
 				}
-			case <-signal:
+			case <-bc.Done():
 				return
 			}
 		}
@@ -226,7 +308,9 @@ func (Dispatcher) Logs(c *gin.Context) {
 	for {
 		_, _, err := conn.ReadMessage()
 		if err != nil {
-			signal <- 1 // 中断发送消息操作
+			// 取消订阅
+			close(logs)
+			bc.Unsubscribe(logs)
 			if websocket.IsCloseError(err, websocket.CloseGoingAway) {
 				logger.Logger().Warn(err.Error())
 			} else {
@@ -261,18 +345,32 @@ func (Dispatcher) Status(c *gin.Context) {
 		return
 	}
 
+	// 先发送一次之前的状态
+	err = conn.WriteJSON(gin.H{
+		"running":  stat.running,
+		"protocol": stat.protocol,
+		"id":       stat.id,
+	})
+	if err != nil {
+		if websocket.IsCloseError(err, websocket.CloseGoingAway) {
+			logger.Logger().Warn(err.Error())
+		} else {
+			logger.Logger().Error(err.Error())
+		}
+		return
+	}
+
 	// 信号量，用于关闭发送消息协程。
 	signal := make(chan int)
-	timer := time.NewTimer(time.Second)
 	// 发送服务器端 v2ray 的状态
 	go func() {
 		for {
 			select {
-			case <-timer.C:
+			case status := <-statCh:
 				err := conn.WriteJSON(gin.H{
-					"running":  stat.running,
-					"protocol": stat.protocol,
-					"id":       stat.id,
+					"running":  status.running,
+					"protocol": status.protocol,
+					"id":       status.id,
 				})
 				if err != nil {
 					if websocket.IsCloseError(err, websocket.CloseGoingAway) {
