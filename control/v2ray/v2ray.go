@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/gopherty/broadcaster"
 
@@ -39,15 +40,17 @@ var (
 		},
 	}
 
+	// 服务器状态推送
+	subj = broadcaster.NewSubject()
 	// v2ray 服务状态, true 代表运行，false 代表停止。
 	stat = &Status{}
-	// 用于发送服务器状态的通道
-	statCh = make(chan *Status, 1)
+
+	// 锁
+	mu sync.Mutex
 
 	// 日志输出相关变量
 	r, w, stdout *os.File
-	bc           broadcaster.Broadcaster
-	started      bool
+	bc           = broadcaster.NewBroadcaster(0)
 )
 
 // Dispatcher v2ray 功能相关的控制器
@@ -82,23 +85,6 @@ func (Dispatcher) Start(c *gin.Context) {
 	}
 	defer file.Close()
 
-	// 需要 json 格式注册解析器，默认为 protobuf。
-	// 注册配置文件加载器
-	// err = core.RegisterConfigLoader(&core.ConfigFormat{
-	// 	Name:      "JSON",
-	// 	Extension: []string{"json"},
-	// 	Loader:    loaderJSON,
-	// })
-	// if err != nil {
-	// 	logger.Logger().Error(err.Error())
-	// 	c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
-	// 		Code:        serve.StatusServerError,
-	// 		Description: "加载 v2ray 配置文件出错",
-	// 		Error:       err.Error(),
-	// 	})
-	// 	return
-	// }
-
 	// 解析 v2ray 的配置文件
 	config, err := core.LoadConfig("json", path, file)
 	if err != nil {
@@ -130,7 +116,6 @@ func (Dispatcher) Start(c *gin.Context) {
 		os.Stdout = stdout
 		stdout = nil
 		w.Close()
-		bc.Close()
 		logger.Logger().Error(err.Error())
 		return
 	}
@@ -143,7 +128,6 @@ func (Dispatcher) Start(c *gin.Context) {
 		os.Stdout = stdout
 		stdout = nil
 		w.Close()
-		bc.Close()
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
 			Code:        serve.StatusV2rayError,
@@ -170,14 +154,12 @@ func (Dispatcher) Start(c *gin.Context) {
 	}()
 
 	// 保存 v2ray 的状态
-	stat.mu.Lock()
+	mu.Lock()
 	stat.id = id
 	stat.protocol = protocol
 	stat.running = true
-	stat.mu.Unlock()
-
-	// 推送 v2ray 状态消息
-	statCh <- stat
+	mu.Unlock()
+	subj.Publish(stat)
 
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
 		Code: serve.StatusOK,
@@ -193,19 +175,7 @@ func (Dispatcher) Stop(c *gin.Context) {
 	defer func() {
 		os.Stdout = stdout
 		stdout = nil
-		w.Close()
-	}()
-
-	// 关闭广播
-	defer func() {
-		logger.Logger().Sugar().Info("-------- stop bc ........", started)
-		if started {
-			started = false
-			err := bc.Close()
-			if err != nil {
-				logger.Logger().Sugar().Info("repete", err)
-			}
-		}
+		w.Close() // 只用关闭 w ，因为 r 被 reader 捕获后，在它关闭时，r也会关闭。
 	}()
 
 	if instance == nil {
@@ -228,12 +198,10 @@ func (Dispatcher) Stop(c *gin.Context) {
 	}
 
 	// 保存 v2ray 的状态
-	stat.mu.Lock()
+	mu.Lock()
 	stat.running = false
-	stat.mu.Unlock()
-
-	// 推送 v2ray 状态消息
-	statCh <- stat
+	mu.Unlock()
+	subj.Publish(stat)
 
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
 		Code: serve.StatusOK,
@@ -269,14 +237,6 @@ func (Dispatcher) Logs(c *gin.Context) {
 		return
 	}
 
-	// 开启广播器
-	logger.Logger().Sugar().Info("-------- start bc ........", started)
-	if !started {
-		bc = broadcaster.NewBroadcaster(0)
-		go bc.Run()
-		started = true
-	}
-
 	// 增加订阅
 	logs := make(chan interface{})
 	bc.Subscribe(logs)
@@ -288,11 +248,7 @@ func (Dispatcher) Logs(c *gin.Context) {
 				if v, ok := log.([]byte); ok {
 					err = conn.WriteMessage(websocket.TextMessage, v)
 					if err != nil {
-						if websocket.IsCloseError(err, websocket.CloseGoingAway) {
-							logger.Logger().Warn(err.Error())
-						} else {
-							logger.Logger().Error(err.Error())
-						}
+						logger.Logger().Warn(err.Error())
 						return
 					}
 				} else {
@@ -309,13 +265,8 @@ func (Dispatcher) Logs(c *gin.Context) {
 		_, _, err := conn.ReadMessage()
 		if err != nil {
 			// 取消订阅
-			close(logs)
 			bc.Unsubscribe(logs)
-			if websocket.IsCloseError(err, websocket.CloseGoingAway) {
-				logger.Logger().Warn(err.Error())
-			} else {
-				logger.Logger().Error(err.Error())
-			}
+			logger.Logger().Warn(err.Error())
 			break
 		}
 	}
@@ -345,57 +296,27 @@ func (Dispatcher) Status(c *gin.Context) {
 		return
 	}
 
-	// 先发送一次之前的状态
-	err = conn.WriteJSON(gin.H{
-		"running":  stat.running,
-		"protocol": stat.protocol,
-		"id":       stat.id,
-	})
-	if err != nil {
-		if websocket.IsCloseError(err, websocket.CloseGoingAway) {
-			logger.Logger().Warn(err.Error())
-		} else {
-			logger.Logger().Error(err.Error())
-		}
-		return
-	}
-
-	// 信号量，用于关闭发送消息协程。
-	signal := make(chan int)
-	// 发送服务器端 v2ray 的状态
-	go func() {
-		for {
-			select {
-			case status := <-statCh:
-				err := conn.WriteJSON(gin.H{
-					"running":  status.running,
-					"protocol": status.protocol,
-					"id":       status.id,
-				})
-				if err != nil {
-					if websocket.IsCloseError(err, websocket.CloseGoingAway) {
-						logger.Logger().Warn(err.Error())
-					} else {
-						logger.Logger().Error(err.Error())
-					}
-					return
-				}
-			case <-signal:
+	subs := subj.HandleFunc(func(msg interface{}) {
+		if stat, ok := msg.(*Status); ok {
+			err := conn.WriteJSON(gin.H{
+				"running":  stat.running,
+				"protocol": stat.protocol,
+				"id":       stat.id,
+			})
+			if err != nil {
+				logger.Logger().Error(err.Error())
 				return
 			}
 		}
-	}()
+	})
+	subj.Publish(stat)
 
 	// 读取客户端发送的关闭连接。
 	for {
 		_, _, err := conn.ReadMessage()
 		if err != nil {
-			signal <- 1 // 发送关闭信号
-			if websocket.IsCloseError(err, websocket.CloseGoingAway) {
-				logger.Logger().Warn(err.Error())
-			} else {
-				logger.Logger().Error(err.Error())
-			}
+			subs.Unsubscribe(true)
+			logger.Logger().Warn(err.Error())
 			break
 		}
 	}
@@ -476,6 +397,54 @@ func parmasToJSON(c *gin.Context) (protocol string, id int, err error) {
 	if err != nil {
 		return
 	}
+
+	// path := utils.BasePath() + "/v2ray.json"
+	// contents, err := ioutil.ReadFile(path)
+	// if err != nil {
+	// 	return
+	// }
+
+	// config := &Config{}
+	// err = json.Unmarshal(contents, config)
+	// if err != nil {
+	// 	return
+	// }
+
+	// user := User{
+	// 	ID:       param.UserID,
+	// 	AlterID:  param.AlertID,
+	// 	Level:    param.Level,
+	// 	Security: param.Security,
+	// }
+	// users := []User{user}
+
+	// vmess := Vmess{
+	// 	Address: param.Address,
+	// 	Port:    param.Port,
+	// 	Users:   users,
+	// }
+
+	// logger.Logger().Sugar().Info(config, param.Protocol)
+
+	// for _, out := range config.Outbounds {
+	// 	if out.Protocol == param.Protocol {
+	// 		logger.Logger().Sugar().Info("---------equal")
+	// 		out.Settings.Vnext = []interface{}{vmess}
+	// 		out.StreamSettings.NetWork = param.Network
+	// 		out.StreamSettings.Security = param.Security
+	// 		out.StreamSettings.WSSettings.Path = param.Path
+	// 	}
+	// }
+	// logger.Logger().Sugar().Info(config, param.Protocol)
+	// cotents1, err := json.MarshalIndent(config, "", "	")
+	// if err != nil {
+	// 	return
+	// }
+	// logger.Logger().Info(string(cotents1))
+	// err = ioutil.WriteFile(path, cotents1, 0666)
+	// if err != nil {
+	// 	return
+	// }
 
 	return param.Protocol, param.ID, err
 }

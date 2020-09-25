@@ -1,9 +1,5 @@
 package v2ray
 
-import (
-	"sync"
-)
-
 // ParamStart accept parameters pass from network.
 type ParamStart struct {
 	Protocol string // 协议名称
@@ -25,7 +21,6 @@ type ParamStart struct {
 
 // Status v2ray 服务器状态
 type Status struct {
-	mu       sync.Mutex
 	protocol string
 	id       int
 	running  bool

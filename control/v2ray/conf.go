@@ -7,92 +7,140 @@ type Config struct {
 	Outbounds []Outbound `json:"outbounds"`
 }
 
-// Log 日志
+// Log 日志配置，表示 V2Ray 如何输出日志。
 type Log struct {
-	Access   string `json:"access"`   // 访问日志的文件地址
-	Error    string `json:"error"`    // 错误日志的文件地址
-	LogLevel string `json:"loglevel"` // 错误日志的级别
+	// 访问日志的文件地址
+	Access string `json:"access"`
+	// 错误日志的文件地址
+	Error string `json:"error"`
+	// 错误日志的级别
+	LogLevel string `json:"loglevel"`
 }
 
-// API api 接口
+// API 远程控制。
 type API struct {
-	Tag      string `json:"tag"`      //出站代理标识
-	Services string `json:"services"` //开启的API列表
+	// 出站代理标识
+	Tag string `json:"tag"`
+	// 开启的API列表
+	Services []string `json:"services"`
 }
 
-// DNS dns 服务器
+// DNS 内置的 DNS 服务器，若此项不存在，则默认使用本机的 DNS 设置。
 type DNS struct {
-	Hosts    string `json:"hosts"`    // 静态 IP 列表
-	Servers  Server `json:"servers"`  // dns 服务器列表
-	ClientIP string `json:"clientIp"` // 当前系统的 IP 地址
-	Tag      string `json:"tag"`      //标识
+	// 静态 IP 列表
+	Hosts map[string]string `json:"hosts"`
+	// DNS 服务器列表。类型为[string | Server]
+	Servers interface{} `json:"servers"`
+	// 当前系统的 IP 地址
+	ClientIP string `json:"clientIp"`
+	// 标识
+	Tag string `json:"tag"`
 }
 
-// Server dns server 对象
+// Server DNS 服务器对象
 type Server struct {
-	Address   string   `json:"address"`   //dns 服务器地址
-	Port      int      `json:"port"`      //dns 服务器端口
-	Domains   []string `json:"domains"`   // 一个域名列表，此列表包含的域名，将优先使用此服务器进行查询。
-	ExpectIPs []string `json:"expectIPs"` //一个 IP 范围列表，格式和路由配置中相同。
+	// DNS 服务器地址
+	Address string `json:"address"`
+	// DNS 服务器端口
+	Port int `json:"port"`
+	// 一个域名列表，此列表包含的域名，将优先使用此服务器进行查询。
+	Domains []string `json:"domains"`
+	// 一个 IP 范围列表，格式和路由配置中相同。
+	ExpectIPs []string `json:"expectIPs"`
 }
 
 // Routing 路由
 type Routing struct {
-	DomainStrategy string     `json:"domainStrategy"`
-	Rules          []Rule     `json:"rules"`
-	Balancers      []Balancer `json:"balancers"`
+	// 域名解析策略，根据不同的设置使用不同的策略。 取值 "AsIs" | "IPIfNonMatch" | "IPOnDemand"
+	DomainStrategy string `json:"domainStrategy"`
+	// 对应一个数组，数组中每个元素是一个规则。
+	Rules []*Rule `json:"rules"`
+	// 一个数组，数组中每个元素是一个负载均衡器的配置。
+	Balancers []*Balancer `json:"balancers"`
 }
 
 // Rule 规则
 type Rule struct {
-	Type        string      `json:"type"`
-	Domain      []string    `json:"domain"`
-	IP          []string    `json:"ip"`
-	Port        interface{} `json:"port"`
-	Network     string      `json:"network"`
-	Source      []string    `json:"source"`
-	User        []string    `json:"user"`
-	InboundTag  []string    `json:"inboundTag"`
-	Protocol    []string    `json:"protocol"`
-	Attr        string      `json:"attrs"`
-	OutboundTag string      `json:"outboundTag"`
-	BalancerTag string      `json:"balancerTag"`
+	// 目前只支持"field"这一个选项。
+	Type string `json:"type"`
+	// 一个数组，数组每一项是一个域名的匹配。
+	Domain []string `json:"domain"`
+	// 一个数组，数组内每一个元素代表一个 IP 范围。
+	IP []string `json:"ip"`
+	// 目标端口范围。类型为 number | string
+	Port interface{} `json:"port"`
+	// 可选的值有 "tcp"、"udp" 或 "tcp,udp"，当连接方式是指定的方式时，此规则生效。
+	Network string `json:"network"`
+	// 一个数组，数组内每一个元素是一个 IP 或 CIDR。
+	Source []string `json:"source"`
+	// 一个数组，数组内每一个元素是一个邮箱地址。
+	User []string `json:"user"`
+	// 一个数组，数组内每一个元素是一个标识。
+	InboundTag []string `json:"inboundTag"`
+	// 一个数组，数组内每一个元素表示一种协议。取值为 [ "http" | "tls" | "bittorrent" ]
+	Protocol []string `json:"protocol"`
+	// 一段脚本，用于检测流量的属性值。
+	Attr string `json:"attrs"`
+	// 对应一个 额外出站连接配置 的标识。
+	OutboundTag string `json:"outboundTag"`
+	// 对应一个负载均衡器的标识。
+	BalancerTag string `json:"balancerTag"`
 }
 
 // Balancer 负载均衡器
 type Balancer struct {
-	Tag      string   `json:"tag"`
+	// 此负载均衡器的标识，用于匹配 RuleObject 中的 balancerTag。
+	Tag string `json:"tag"`
+	// 一个字符串数组，其中每一个字符串将用于和出站协议标识的前缀匹配。
 	Selector []string `json:"selector"`
 }
 
 // Policy 本地策略，可以进行权限相关的配置
 type Policy struct {
-	Level  map[string]LevelPolicy `json:"levels"`
-	System SystemPolicy           `json:"system"`
+	// 一组键值对
+	Level  map[string]*LevelPolicy `json:"levels"`
+	System *SystemPolicy           `json:"system"`
 }
 
 // LevelPolicy 策略等级
 type LevelPolicy struct {
-	Handshake         int  `json:"handshake"`
-	ConnIdle          int  `json:"connIdle"`
-	UplinkOnly        int  `json:"uplinkOnly"`
-	DownlinkOnly      int  `json:"downlinkOnly"`
-	StatsUserUplink   bool `json:"statsUserUplink"`
+	// 连接建立时的握手时间限制。单位为秒。默认值为 4。
+	Handshake int `json:"handshake"`
+	// 连接空闲的时间限制。单位为秒。默认值为 300。
+	ConnIdle int `json:"connIdle"`
+	// 当连接下行线路关闭后的时间限制。单位为秒。默认值为 2。
+	UplinkOnly int `json:"uplinkOnly"`
+	// 当连接上行线路关闭后的时间限制。单位为秒。默认值为 5。
+	DownlinkOnly int `json:"downlinkOnly"`
+	// 当值为 true 时，开启当前等级的所有用户的上行流量统计。
+	StatsUserUplink bool `json:"statsUserUplink"`
+	// 当值为 true 时，开启当前等级的所有用户的下行流量统计。
 	StatsUserDownlink bool `json:"statsUserDownlink"`
-	BufferSize        int  `json:"bufferSize"`
+	// 每个连接的内部缓存大小。单位为 kB。
+	BufferSize int `json:"bufferSize"`
 }
 
 // SystemPolicy 系统策略
 type SystemPolicy struct {
-	StatsInboundUplink   bool `json:"statsInboundUplink"`
+	// 当值为 true 时，开启所有入站代理的上行流量统计。
+	StatsInboundUplink bool `json:"statsInboundUplink"`
+	// 当值为 true 时，开启所有入站代理的下行流量统计。
 	StatsInboundDownlink bool `json:"statsInboundDownlink"`
+	// 当值为 true 时，开启所有出站代理的上行流量统计。
+	StatsOutboundUplink bool `json:"statsOutboundUplink"`
+	// 当值为 true 时，开启所有出站代理的下行流量统计。
+	StatsOutboundDownlink bool `json:"statsOutboundDownlink"`
 }
 
 // Inbound 入站连接配置
 type Inbound struct {
-	Port     interface{} `json:"port"`
-	Listen   string      `json:"listen"`
-	Protocol string      `json:"protocol"`
+	// 端口。类型为 number | "env:variable" | string
+	Port interface{} `json:"port"`
+	// 监听地址，只允许 IP 地址，默认值为 "0.0.0.0"
+	Listen string `json:"listen"`
+	// 连接协议名称，可选的值见协议列表。
+	Protocol string `json:"protocol"`
+	// 具体的配置内容，视协议不同而不同。类型为 InboundConfigurationObject
 	Settings interface{} `json:"settings"`
 	// StreamSettings StreamSettings       `json:"streamSettings"`
 	// Tag            string               `json:"tag"`

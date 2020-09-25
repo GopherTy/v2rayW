@@ -20,6 +20,8 @@ func init() {
 	if err != nil {
 		logger.Logger().Fatal(err.Error())
 	}
+
+	go bc.Run()
 }
 
 func loaderJSON(input io.Reader) (*core.Config, error) {
