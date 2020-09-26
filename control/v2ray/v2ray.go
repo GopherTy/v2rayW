@@ -340,12 +340,12 @@ func parmasToJSON(c *gin.Context) (protocol string, id int, err error) {
 		Settings: Socks{
 			Auth: "noauth",
 		},
-		Sniffing: Sniffing{
+		Sniffing: &Sniffing{
 			Enabled:      true,
 			DestOverride: destOverride,
 		},
 	}
-	inbounds := []Inbound{sock}
+	inbounds := []*Inbound{&sock}
 
 	user := User{
 		ID:       param.UserID,
@@ -368,20 +368,20 @@ func parmasToJSON(c *gin.Context) (protocol string, id int, err error) {
 
 	outbound := Outbound{
 		Protocol: "vmess",
-		Settings: outboundConf,
-		StreamSettings: StreamSettings{
+		Settings: &outboundConf,
+		StreamSettings: &StreamSettings{
 			NetWork:  param.Network,
 			Security: param.NetSecurity,
-			WSSettings: WebSocket{
+			WSSettings: &WebSocket{
 				Path: param.Path,
 			},
 		},
-		Mux: Mux{
+		Mux: &Mux{
 			Enabled: true,
 		},
 	}
 
-	outbounds := []Outbound{outbound}
+	outbounds := []*Outbound{&outbound}
 	cnf := Config{
 		Inbounds:  inbounds,
 		Outbounds: outbounds,

@@ -2,9 +2,9 @@ package v2ray
 
 // Config v2ray config struct to json
 type Config struct {
-	Log       Log        `json:"log"`
-	Inbounds  []Inbound  `json:"inbounds"`
-	Outbounds []Outbound `json:"outbounds"`
+	Log       *Log        `json:"log"`
+	Inbounds  []*Inbound  `json:"inbounds"`
+	Outbounds []*Outbound `json:"outbounds"`
 }
 
 // Log 日志配置，表示 V2Ray 如何输出日志。
@@ -141,15 +141,19 @@ type Inbound struct {
 	// 连接协议名称，可选的值见协议列表。
 	Protocol string `json:"protocol"`
 	// 具体的配置内容，视协议不同而不同。类型为 InboundConfigurationObject
-	Settings interface{} `json:"settings"`
-	// StreamSettings StreamSettings       `json:"streamSettings"`
-	// Tag            string               `json:"tag"`
-	Sniffing Sniffing `json:"sniffing"`
-	// Allocate Allocate `json:"allocate"`
+	Settings InboundConfiguration `json:"settings"`
+	// 底层传输配置
+	StreamSettings *StreamSettings `json:"streamSettings"`
+	// 此入站连接的标识，用于在其它的配置中定位此连接。
+	Tag string `json:"tag"`
+	// 尝试探测流量的类型
+	Sniffing *Sniffing `json:"sniffing"`
+	// 端口分配设置
+	Allocate *Allocate `json:"allocate"`
 }
 
-// InboundConfiguration 入口配置
-type InboundConfiguration struct {
+// InboundConfiguration 底层传输配置
+type InboundConfiguration interface {
 }
 
 // Client 服务器认可的用户
@@ -173,21 +177,172 @@ type Detour struct {
 
 // StreamSettings  底层传输配置
 type StreamSettings struct {
-	NetWork    string    `json:"network"`
-	Security   string    `json:"security"`
-	WSSettings WebSocket `json:"wsSettings"`
-	// TLSSettings  string    `json:"tlsSettings"`
-	// TCPSettings  string    `json:"tcpSettings"`
-	// HTTPSettings string    `json:"httpSettings"`
-	// DSSettings   string    `json:"dsSettings"`
-	// QUICSettings string    `json:"quicSettings"`
-	// Sockopt      string    `json:"sockopt"`
+	// 数据流所使用的网络类型，默认值为 "tcp"
+	NetWork string `json:"network"`
+	// 是否启用传输层加密。取值为 "none" | "tls",默认值为 "none"。
+	Security string `json:"security"`
+	// TLS 配置
+	TLSSettings *TLS `json:"tlsSettings"`
+	// 当前连接的 TCP 配置，仅当此连接使用 TCP 时有效。
+	TCPSettings *TCP `json:"tcpSettings"`
+	// 当前连接的 mKCP 配置，仅当此连接使用 mKCP 时有效
+	KCPSettings *KCP `json:"kcpSettings"`
+	// 当前连接的 WebSocket 配置，仅当此连接使用 WebSocket 时有效。
+	WSSettings *WebSocket `json:"wsSettings"`
+	// 当前连接的 HTTP2 配置
+	HTTPSettings *HTTP `json:"httpSettings"`
+	// 当前连接的 Domain socket 配置
+	DSSettings *DomainSocket `json:"dsSettings"`
+	// 当前连接的 quic 配置
+	QUICSettings *QUIC `json:"quicSettings"`
+	// 当前连接的透明代理配置
+	Sockopt *Sockopt `json:"sockopt"`
+}
+
+// TLS TLS配置。
+type TLS struct {
+	// 指定服务器端证书的域名，在连接由 IP 建立时有用。
+	ServerName string `json:"serverName"`
+	// 一个字符串数组，指定了 TLS 握手时指定的 ALPN 数值。
+	ALPN []string `json:"alpn"`
+	// 是否允许不安全连接（仅用于客户端）。默认值为 false
+	AllowInsecure bool `json:"allowInsecure"`
+	// （V2Ray 4.18+）是否禁用操作系统自带的 CA 证书。默认值为 false。
+	DisableSystemRoot bool `json:"disableSystemRoot"`
+	// 证书列表，其中每一项表示一个证书（建议 fullchain）。
+	Certificates []*Certificates `json:"certificates"`
+}
+
+// Certificates 证书列表。
+type Certificates struct {
+	// 证书用途，默认值为 "encipherment"。取值为 "encipherment" | "verify" | "issue"
+	Usage string `json:"usage"`
+	// 证书文件路径，如使用 OpenSSL 生成，后缀名为 .crt。
+	CertificateFile string `json:"certificateFile"`
+	// 一个字符串数组，表示证书内容，格式如样例所示。
+	Certificate []string `json:"certificate"`
+	// 密钥文件路径
+	KeyFile string `json:"keyFile"`
+	// 一个字符串数组，表示密钥内容
+	Key []string `json:"key"`
+}
+
+// TCP TCP配置。
+type TCP struct {
+	// v4.27.1+，仅用于 inbound，是否接收 PROXY protocol，默认值为 false。
+	AcceptProxyProtocol bool `json:"acceptProxyProtocol"`
+	// 数据包头部伪装设置，默认值为 NoneHeaderObject。
+	// 类型为 NoneHeaderObject | HttpHeaderobject
+	Header interface{} `json:"header"`
+}
+
+// NoneHeader 不进行伪装
+type NoneHeader struct {
+	Type string `json:"type"`
+}
+
+// HTTPHeader HTTP 伪装配置
+type HTTPHeader struct {
+	// 指定进行 HTTP 伪装
+	Type string `json:"type"`
+	// HTTP 请求
+	Request *HTTPRequest `json:"request"`
+	// HTTP 响应
+	Response *HTTPResponse `json:"response"`
+}
+
+// HTTPRequest http 请求
+type HTTPRequest struct {
+	// HTTP 版本，默认值为 "1.1"。
+	Version string `json:"version"`
+	// HTTP 方法，默认值为 "GET"。
+	Method string `json:"method"`
+	// 路径，一个字符串数组。默认值为 ["/"]。
+	Path []string `json:"path"`
+	// HTTP 头，一个键值对，每个键表示一个 HTTP 头的名称，对应的值是一个数组。
+	Headers map[string][]string `json:"headers"`
+}
+
+// HTTPResponse http 响应
+type HTTPResponse struct {
+	// HTTP 版本，默认值为 "1.1"。
+	Version string `json:"version"`
+	//HTTP 状态，默认值为 "200"。
+	Status string `json:"status"`
+	// HTTP 状态说明，默认值为 "OK"。
+	Reason string `json:"reason"`
+	// HTTP 头，一个键值对，每个键表示一个 HTTP 头的名称，对应的值是一个数组。
+	Headers map[string][]string `json:"headers"`
+}
+
+// KCP 当前连接的 mKCP 配置，仅当此连接使用 mKCP 时有效
+type KCP struct {
+	// 最大传输单元
+	Mtu int `json:"mtu"`
+	// 传输时间间隔
+	Tti int `json:"tti"`
+	// 上行链路容量
+	UplinkCapacity int `json:"UplinkCapacity"`
+	// 下行链路容量
+	DownlinkCapacity int `json:"downlinkCapacity"`
+	// 是否启用拥塞控制
+	Congestion bool `json:"congestion"`
+	// 单个连接的读取缓冲区大小
+	ReadBufferSize int `json:"readBufferSize"`
+	// 单个连接的写入缓冲区大小
+	WriteBufferSize int `json:"writeBufferSize"`
+	// 数据包头部伪装设置
+	Header *Header `json:"header"`
+	// v4.24.2+，可选的混淆密码
+	Seed string `json:"seed"`
+}
+
+// Header 数据包头部伪装设置
+type Header struct {
+	Type string `json:"type"`
 }
 
 // WebSocket ws协议
 type WebSocket struct {
+	// v4.27.1+，仅用于 inbound，是否接收 PROXY protsocol，默认值为 false.
+	AcceptProxyProtocol bool `json:"acceptProxyProtocol"`
+	// WebSocket 所使用的 HTTP 协议路径，默认值为 "/"。
 	Path string `json:"path"`
-	// Header map[string]string `json:"headers"`
+	// 自定义 HTTP 头，一个键值对，每个键表示一个 HTTP 头的名称，对应的值是字符串。默认值为空。
+	Header map[string]string `json:"headers"`
+}
+
+// HTTP http2 配置
+type HTTP struct {
+	Host []string `json:"host"`
+	// http 路径，由 / 开头。
+	Path string `json:"path"`
+}
+
+// DomainSocket 使用 unix domain socket 来传输数据。
+type DomainSocket struct {
+	Path     string `json:"path"`
+	Abstract bool   `json:"abstract"`
+}
+
+// QUIC udp 多路并发传输协议配置
+type QUIC struct {
+	// 加密方式。取值为 "none" | "aes-128-gcm" | "chacha20-poly1305"
+	Security string `json:"security"`
+	// 加密时用的密钥
+	Key string `json:"key"`
+	// 数据包头部伪装设置
+	Header *Header `json:"header"`
+}
+
+// Sockopt 透明代理配置
+type Sockopt struct {
+	// 一个整数。
+	Mark int `json:"mark"`
+	// 是否启用 tcp fast open
+	TCPFastOpen bool `json:"tcpFastOpen"`
+	// 是否开启透明代理仅适用于Linux。取值为 "redirect" | "tproxy" | "off"
+	Tproxy string `json:"Tproxy"`
 }
 
 // Sniffing 尝试探测流量的类型
@@ -205,13 +360,13 @@ type Allocate struct {
 
 // Outbound 出站连接配置
 type Outbound struct {
-	// SendThrough    string
-	// Tag            string `json:"tag"`
-	// ProxySettings  ProxySetting
-	Protocol       string                `json:"protocol"` // 默认 vmess 协议
-	Settings       OutboundConfiguration `json:"settings"`
-	StreamSettings StreamSettings        `json:"streamSettings"`
-	Mux            Mux                   `json:"mux"`
+	SendThrough    string                 `json:"sendThrough"`
+	Protocol       string                 `json:"protocol"`
+	Settings       *OutboundConfiguration `json:"settings"`
+	Tag            string                 `json:"tag"`
+	StreamSettings *StreamSettings        `json:"streamSettings"`
+	ProxySettings  *ProxySetting          `json:"proxySettings"`
+	Mux            *Mux                   `json:"mux"`
 }
 
 // OutboundConfiguration 出口配置
@@ -248,22 +403,43 @@ type Socks struct {
 
 // ProxySetting 出站代理配置。
 type ProxySetting struct {
+	Tag string `json:"tag"`
 }
 
 // Mux 配置
 type Mux struct {
-	Enabled bool `json:"enabled"`
-	// Concurrency int  `json:"concurrency"`
-}
-
-// Reverse 反向代理配置。
-type Reverse struct {
+	Enabled     bool `json:"enabled"`
+	Concurrency int  `json:"concurrency"`
 }
 
 // Transport 用于配置 V2Ray 如何与其它服务器建立和使用网络连接。
 type Transport struct {
+	TCPSettings  *TCP          `json:"tcpSettings"`
+	KCPSettings  *KCP          `json:"kcpSettings"`
+	WSSettings   *WebSocket    `json:"wsSettings"`
+	HTTPSettings *HTTP         `json:"httpSettings"`
+	DSSettings   *DomainSocket `json:"dsSettings"`
+	QUICSettings *QUIC         `json:"quicSettings"`
 }
 
 // Stats 当此项存在式，开启统计信息。
 type Stats struct {
+}
+
+// Reverse 反向代理配置。
+type Reverse struct {
+	Bridges *Bridge `json:"bridges"`
+	Protals *Portal `json:"protols"`
+}
+
+// Bridge .
+type Bridge struct {
+	Tag    string `json:"tag"`
+	Domain string `json:"domain"`
+}
+
+// Portal .
+type Portal struct {
+	Tag    string `json:"tag"`
+	Domain string `json:"domain"`
 }
