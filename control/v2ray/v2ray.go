@@ -332,85 +332,85 @@ func parmasToJSON(c *gin.Context) (protocol string, id int, err error) {
 	}
 
 	// 入口协议
-	destOverride := []string{"http", "tls"}
-	sock := Inbound{
-		Port:     1080,
-		Listen:   "127.0.0.1",
-		Protocol: "socks",
-		Settings: Socks{
-			Auth: "noauth",
-		},
-		Sniffing: &Sniffing{
-			Enabled:      true,
-			DestOverride: destOverride,
-		},
-	}
-	inbounds := []*Inbound{&sock}
+	// destOverride := []string{"http", "tls"}
+	// sock := Inbound{
+	// 	Port:     1080,
+	// 	Listen:   "127.0.0.1",
+	// 	Protocol: "socks",
+	// 	Settings: SocksInbound{
+	// 		Auth: "noauth",
+	// 	},
+	// 	Sniffing: Sniffing{
+	// 		Enabled:      true,
+	// 		DestOverride: destOverride,
+	// 	},
+	// }
+	// inbounds := []Inbound{sock}
 
-	user := User{
-		ID:       param.UserID,
-		AlterID:  param.AlertID,
-		Level:    param.Level,
-		Security: param.Security,
-	}
-	users := []User{user}
+	// user := VmessUser{
+	// 	ID:       param.UserID,
+	// 	AlterID:  param.AlertID,
+	// 	Level:    param.Level,
+	// 	Security: param.Security,
+	// }
+	// users := []VmessUser{user}
 
-	vmess := Vmess{
-		Address: param.Address,
-		Port:    param.Port,
-		Users:   users,
-	}
-	protocols := []interface{}{vmess}
+	// vmess := VmessServer{
+	// 	Address: param.Address,
+	// 	Port:    param.Port,
+	// 	Users:   users,
+	// }
 
-	outboundConf := OutboundConfiguration{
-		Vnext: protocols,
-	}
+	// outboundConf := VmessOutbound{
+	// 	Vnext: []VmessServer{vmess},
+	// }
 
-	outbound := Outbound{
-		Protocol: "vmess",
-		Settings: &outboundConf,
-		StreamSettings: &StreamSettings{
-			NetWork:  param.Network,
-			Security: param.NetSecurity,
-			WSSettings: &WebSocket{
-				Path: param.Path,
-			},
-		},
-		Mux: &Mux{
-			Enabled: true,
-		},
-	}
+	// outbound := Outbound{
+	// 	Protocol: "vmess",
+	// 	Settings: outboundConf,
+	// 	StreamSettings: StreamSettings{
+	// 		NetWork:  param.Network,
+	// 		Security: param.NetSecurity,
+	// 		WSSettings: WebSocket{
+	// 			Path: param.Path,
+	// 		},
+	// 	},
+	// 	Mux: Mux{
+	// 		Enabled: true,
+	// 	},
+	// }
 
-	outbounds := []*Outbound{&outbound}
-	cnf := Config{
-		Inbounds:  inbounds,
-		Outbounds: outbounds,
-	}
+	// outbounds := []Outbound{outbound}
+	// cnf := Config{
+	// 	Inbounds:  inbounds,
+	// 	Outbounds: outbounds,
+	// }
 
-	str, err := json.MarshalIndent(&cnf, "", "    ")
-	if err != nil {
-		return
-	}
-
-	path := utils.BasePath() + "/v2ray.json"
-	err = ioutil.WriteFile(path, str, 0666)
-	if err != nil {
-		return
-	}
+	// str, err := json.MarshalIndent(&cnf, "", "    ")
+	// if err != nil {
+	// 	return
+	// }
 
 	// path := utils.BasePath() + "/v2ray.json"
-	// contents, err := ioutil.ReadFile(path)
+	// err = ioutil.WriteFile(path, str, 0666)
 	// if err != nil {
 	// 	return
 	// }
 
-	// config := &Config{}
-	// err = json.Unmarshal(contents, config)
-	// if err != nil {
-	// 	return
-	// }
+	path := utils.BasePath() + "/v2ray.json"
+	contents, err := ioutil.ReadFile(path)
+	if err != nil {
+		return
+	}
+	logger.Logger().Info(string(contents))
 
-	// user := User{
+	config := &Config{}
+	err = json.Unmarshal(contents, config)
+	if err != nil {
+		return
+	}
+
+	// user := VmessUser{
 	// 	ID:       param.UserID,
 	// 	AlterID:  param.AlertID,
 	// 	Level:    param.Level,
@@ -424,27 +424,16 @@ func parmasToJSON(c *gin.Context) (protocol string, id int, err error) {
 	// 	Users:   users,
 	// }
 
-	// logger.Logger().Sugar().Info(config, param.Protocol)
-
 	// for _, out := range config.Outbounds {
 	// 	if out.Protocol == param.Protocol {
 	// 		logger.Logger().Sugar().Info("---------equal")
-	// 		out.Settings.Vnext = []interface{}{vmess}
+	// 		// out.Settings.Vnext = []interface{}{vmess}
 	// 		out.StreamSettings.NetWork = param.Network
 	// 		out.StreamSettings.Security = param.Security
 	// 		out.StreamSettings.WSSettings.Path = param.Path
 	// 	}
 	// }
 	// logger.Logger().Sugar().Info(config, param.Protocol)
-	// cotents1, err := json.MarshalIndent(config, "", "	")
-	// if err != nil {
-	// 	return
-	// }
-	// logger.Logger().Info(string(cotents1))
-	// err = ioutil.WriteFile(path, cotents1, 0666)
-	// if err != nil {
-	// 	return
-	// }
 
 	return param.Protocol, param.ID, err
 }
