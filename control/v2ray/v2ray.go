@@ -2,10 +2,10 @@ package v2ray
 
 import (
 	"bufio"
-	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/gopherty/broadcaster"
@@ -23,6 +23,7 @@ import (
 	_ "v2ray.com/core/app/dispatcher"
 	_ "v2ray.com/core/app/proxyman/inbound"
 	_ "v2ray.com/core/app/proxyman/outbound"
+	_ "v2ray.com/core/main/json"
 
 	"v2ray.com/core"
 
@@ -325,115 +326,31 @@ func (Dispatcher) Status(c *gin.Context) {
 // parmasToJSON 将 v2ray 启动参数转化为配置文件
 func parmasToJSON(c *gin.Context) (protocol string, id int, err error) {
 	// 绑定参数
-	var param ParamStart
+	var param ProtocolParam
 	err = c.ShouldBindWith(&param, binding.Default(c.Request.Method, c.ContentType()))
 	if err != nil {
 		return
 	}
 
-	// 入口协议
-	// destOverride := []string{"http", "tls"}
-	// sock := Inbound{
-	// 	Port:     1080,
-	// 	Listen:   "127.0.0.1",
-	// 	Protocol: "socks",
-	// 	Settings: SocksInbound{
-	// 		Auth: "noauth",
-	// 	},
-	// 	Sniffing: Sniffing{
-	// 		Enabled:      true,
-	// 		DestOverride: destOverride,
-	// 	},
-	// }
-	// inbounds := []Inbound{sock}
-
-	// user := VmessUser{
-	// 	ID:       param.UserID,
-	// 	AlterID:  param.AlertID,
-	// 	Level:    param.Level,
-	// 	Security: param.Security,
-	// }
-	// users := []VmessUser{user}
-
-	// vmess := VmessServer{
-	// 	Address: param.Address,
-	// 	Port:    param.Port,
-	// 	Users:   users,
-	// }
-
-	// outboundConf := VmessOutbound{
-	// 	Vnext: []VmessServer{vmess},
-	// }
-
-	// outbound := Outbound{
-	// 	Protocol: "vmess",
-	// 	Settings: outboundConf,
-	// 	StreamSettings: StreamSettings{
-	// 		NetWork:  param.Network,
-	// 		Security: param.NetSecurity,
-	// 		WSSettings: WebSocket{
-	// 			Path: param.Path,
-	// 		},
-	// 	},
-	// 	Mux: Mux{
-	// 		Enabled: true,
-	// 	},
-	// }
-
-	// outbounds := []Outbound{outbound}
-	// cnf := Config{
-	// 	Inbounds:  inbounds,
-	// 	Outbounds: outbounds,
-	// }
-
-	// str, err := json.MarshalIndent(&cnf, "", "    ")
-	// if err != nil {
-	// 	return
-	// }
-
-	// path := utils.BasePath() + "/v2ray.json"
-	// err = ioutil.WriteFile(path, str, 0666)
-	// if err != nil {
-	// 	return
-	// }
-
 	path := utils.BasePath() + "/v2ray.json"
-	contents, err := ioutil.ReadFile(path)
+	var content []byte
+	switch strings.ToUpper(param.Protocol) {
+	case "VMESS":
+		content, err = parseVmessOutbound(&param)
+		if err != nil {
+			return
+		}
+	case "VLESS":
+		content, err = parseVlessOutbound(&param)
+		if err != nil {
+			return
+		}
+	}
+
+	err = ioutil.WriteFile(path, content, os.ModePerm)
 	if err != nil {
 		return
 	}
-	logger.Logger().Info(string(contents))
-
-	config := &Config{}
-	err = json.Unmarshal(contents, config)
-	if err != nil {
-		return
-	}
-
-	// user := VmessUser{
-	// 	ID:       param.UserID,
-	// 	AlterID:  param.AlertID,
-	// 	Level:    param.Level,
-	// 	Security: param.Security,
-	// }
-	// users := []User{user}
-
-	// vmess := Vmess{
-	// 	Address: param.Address,
-	// 	Port:    param.Port,
-	// 	Users:   users,
-	// }
-
-	// for _, out := range config.Outbounds {
-	// 	if out.Protocol == param.Protocol {
-	// 		logger.Logger().Sugar().Info("---------equal")
-	// 		// out.Settings.Vnext = []interface{}{vmess}
-	// 		out.StreamSettings.NetWork = param.Network
-	// 		out.StreamSettings.Security = param.Security
-	// 		out.StreamSettings.WSSettings.Path = param.Path
-	// 	}
-	// }
-	// logger.Logger().Sugar().Info(config, param.Protocol)
 
 	return param.Protocol, param.ID, err
 }

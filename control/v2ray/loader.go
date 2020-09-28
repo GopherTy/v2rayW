@@ -1,34 +1,32 @@
 package v2ray
 
-import (
-	"io"
-
-	"v2ray.com/core"
-	"v2ray.com/ext/tools/conf/serial"
-
-	"github.com/gopherty/v2rayW/logger"
-)
+// v2ray config  object
+var cnf = NewConfig()
 
 func init() {
-	// 需要 json 格式注册解析器，默认为 protobuf。
-	// 注册配置文件加载器
-	err := core.RegisterConfigLoader(&core.ConfigFormat{
-		Name:      "JSON",
-		Extension: []string{"json"},
-		Loader:    loaderJSON,
-	})
-	if err != nil {
-		logger.Logger().Fatal(err.Error())
+	mu.Lock()
+	// log
+	cnf.Log = map[string]interface{}{
+		"access":   "",
+		"error":    "",
+		"loglevel": "warning",
 	}
+	// socks
+	inbound := map[string]interface{}{
+		"port":     1080,
+		"listen":   "127.0.0.1",
+		"protocol": "socks",
+		"settings": map[string]interface{}{
+			"auth": "noauth",
+		},
+		"sniffing": map[string]interface{}{
+			"enabled":      true,
+			"destOverride": []string{"http", "tls"},
+		},
+	}
+	cnf.Inbounds = append(cnf.Inbounds, inbound)
+	mu.Unlock()
 
+	// 日志广播器
 	go bc.Run()
-}
-
-func loaderJSON(input io.Reader) (*core.Config, error) {
-	// 解析配置文件到 Protobuf 生成的结构中。
-	cnf, err := serial.LoadJSONConfig(input)
-	if err != nil {
-		return nil, err
-	}
-	return cnf, nil
 }

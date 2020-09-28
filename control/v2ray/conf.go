@@ -1,5 +1,34 @@
 package v2ray
 
+// BaseCnf v2ray config struct to json.
+type BaseCnf struct {
+	Log       map[string]interface{}   `json:"log"`
+	API       map[string]interface{}   `json:"api"`
+	DNS       map[string]interface{}   `json:"dns"`
+	Routing   map[string]interface{}   `json:"routing"`
+	Policy    map[string]interface{}   `json:"policy"`
+	Inbounds  []map[string]interface{} `json:"inbounds"`
+	Outbounds []map[string]interface{} `json:"outbounds"`
+	Transport map[string]interface{}   `json:"transport"`
+	Stats     map[string]interface{}   `json:"stats"`
+	Reverse   map[string]interface{}   `json:"reverse"`
+}
+
+// NewConfig v2ray config struct to json
+func NewConfig() *BaseCnf {
+	return &BaseCnf{
+		Log:       make(map[string]interface{}),
+		DNS:       make(map[string]interface{}),
+		Routing:   make(map[string]interface{}),
+		Policy:    make(map[string]interface{}),
+		Inbounds:  make([]map[string]interface{}, 0),
+		Outbounds: make([]map[string]interface{}, 0),
+		Transport: make(map[string]interface{}),
+		Stats:     make(map[string]interface{}),
+		Reverse:   make(map[string]interface{}),
+	}
+}
+
 // Config v2ray config struct to json
 type Config struct {
 	Log       Log        `json:"log"`

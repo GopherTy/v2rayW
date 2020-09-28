@@ -71,7 +71,17 @@ func (Register) Regist() {
 			logger.Logger().Fatal(err.Error())
 		}
 	}
-	db.Sync2(&proxy.Vmess{})
+	exists, err = db.IsTableExist(&proxy.Vless{})
+	if err != nil {
+		logger.Logger().Fatal(err.Error())
+	}
+	if !exists {
+		err = db.CreateTables(&proxy.Vless{})
+		if err != nil {
+			logger.Logger().Fatal(err.Error())
+		}
+	}
+	db.Sync2(&proxy.Vmess{}, &proxy.Vless{})
 
 	// 是否关闭用户管理
 	if cnf.DB.UserManageDisable {

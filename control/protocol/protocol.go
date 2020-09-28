@@ -51,12 +51,25 @@ func (Dispatcher) ListProxyProtocols(c *gin.Context) {
 		})
 		return
 	}
+
+	var vless []proxy.Vless
+	err = session.Table("vless").Where("user_id = ?", params["uid"]).Find(&vless)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusDBError,
+			Description: "数据库错误",
+			Error:       err.Error(),
+		})
+		return
+	}
 	session.Commit()
 
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
 		Code: serve.StatusOK,
 		Data: map[string]interface{}{
 			"vmess": v2rays,
+			"vless": vless,
 		},
 	})
 }
@@ -78,10 +91,10 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 
 	// 获取数据库对象
 	engine := db.Engine()
-	var v2ray *proxy.Vmess
+	var id uint64
 	switch params.Protocol {
 	case "vmess":
-		v2ray = &proxy.Vmess{
+		v2ray := &proxy.Vmess{
 			UID:         uint64(params.UID),
 			Name:        params.Name,
 			Protocol:    params.Protocol,
@@ -106,6 +119,34 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 			})
 			return
 		}
+		id = v2ray.ID
+	case "vless":
+		vless := &proxy.Vless{
+			UID:         uint64(params.UID),
+			Name:        params.Name,
+			Protocol:    params.Protocol,
+			Address:     params.Address,
+			Port:        params.Port,
+			UserID:      params.UserID,
+			Flow:        params.Flow,
+			Encryption:  params.Encryption,
+			Level:       params.Level,
+			Network:     params.Network,
+			NetSecurity: params.NetSecurity,
+			Path:        params.Path,
+			Domains:     params.Domains,
+		}
+		_, err = engine.Table(vless.TableName()).Insert(vless)
+		if err != nil {
+			logger.Logger().Error(err.Error())
+			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+				Code:        serve.StatusDBError,
+				Description: "数据库错误",
+				Error:       err.Error(),
+			})
+			return
+		}
+		id = vless.ID
 	default:
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
 			Code:  serve.StatusServerError,
@@ -118,7 +159,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 		Code: serve.StatusOK,
 		Data: map[string]interface{}{
 			"msg": "增加成功",
-			"id":  v2ray.ID,
+			"id":  id,
 		},
 	})
 }
@@ -143,6 +184,11 @@ func (Dispatcher) DeleteProxyProtocol(c *gin.Context) {
 	case "vmess":
 		protocolName = "vmess"
 		bean = proxy.Vmess{
+			ID: uint64(params.ProtocolID),
+		}
+	case "vless":
+		protocolName = "vless"
+		bean = proxy.Vless{
 			ID: uint64(params.ProtocolID),
 		}
 	default:
@@ -209,6 +255,32 @@ func (Dispatcher) UpdateProxyProtocol(c *gin.Context) {
 			Domains:     params.Domains,
 		}
 		_, err := engine.Table(v2ray.TableName()).AllCols().Where(" id = ?", params.ID).Update(v2ray)
+		if err != nil {
+			logger.Logger().Error(err.Error())
+			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+				Code:        serve.StatusDBError,
+				Description: "数据库错误",
+				Error:       err.Error(),
+			})
+			return
+		}
+	case "vless":
+		vless := &proxy.Vless{
+			UID:         uint64(params.UID),
+			Name:        params.Name,
+			Address:     params.Address,
+			Port:        params.Port,
+			UserID:      params.UserID,
+			Flow:        params.Flow,
+			Encryption:  params.Encryption,
+			Level:       params.Level,
+			Network:     params.Network,
+			NetSecurity: params.NetSecurity,
+			Path:        params.Path,
+			Protocol:    params.Protocol,
+			Domains:     params.Domains,
+		}
+		_, err := engine.Table(vless.TableName()).AllCols().Where(" id = ?", params.ID).Update(vless)
 		if err != nil {
 			logger.Logger().Error(err.Error())
 			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{

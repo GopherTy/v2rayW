@@ -25,7 +25,7 @@ type Vmess struct {
 	Domains string
 }
 
-// TableName v2ray的表明
+// TableName v2ray的表名
 func (Vmess) TableName() string {
 	return "vmess"
 }

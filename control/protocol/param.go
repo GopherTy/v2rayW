@@ -13,10 +13,14 @@ type Content struct {
 	Port    int    `json:"port"`    // 端口
 
 	// vmess 协议
-	UserID   string `json:"userId"`   //  userId
-	AlertID  int    `json:"alertId"`  //   alertId
-	Level    int    `json:"level"`    //  等级
-	Security string `json:"security"` // 加密方式
+	UserID  string `json:"userId"`  //  userId
+	AlertID int    `json:"alertId"` //   alertId
+	// vless 协议参数
+	Flow string `json:"flow"`
+	// vless 协议参数
+	Encryption string `json:"encryption"`
+	Level      int    `json:"level"`    //  等级
+	Security   string `json:"security"` // 加密方式
 
 	Network     string `json:"network"`     // 伪装网络协议类型
 	Domains     string `json:"domains"`     // 伪装域名

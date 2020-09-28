@@ -1,17 +1,21 @@
 package v2ray
 
-// ParamStart accept parameters pass from network.
-type ParamStart struct {
+// ProtocolParam accept parameters pass from network.
+type ProtocolParam struct {
 	Protocol string // 协议名称
 	ID       int    // 协议 id
 
 	Address string `json:"address"`
 	Port    int    `json:"port"`
 
-	UserID   string
-	AlertID  int    `json:"alertId"`
-	Level    int    `json:"level"`
-	Security string `json:"security"`
+	UserID  string
+	AlertID int `json:"alertId"`
+	// vless 协议参数
+	Flow string `json:"flow"`
+	// vless 协议参数
+	Encryption string `json:"encryption"`
+	Level      int    `json:"level"`
+	Security   string `json:"security"`
 
 	Network     string `json:"network"`
 	Domains     string `json:"domains"`
