@@ -31,17 +31,10 @@ func (Dispatcher) ListProxyProtocols(c *gin.Context) {
 		return
 	}
 
-	// 用事务进行处理，因为目前只支持 vmess 协议。
 	engine := db.Engine()
-	session := engine.NewSession()
-	defer session.Close()
-
-	// 开启事务
-	session.Begin()
-	defer session.Rollback()
 
 	var v2rays []proxy.Vmess
-	err = session.Table("vmess").Where("user_id = ?", params["uid"]).Find(&v2rays)
+	err = engine.Table("vmess").Where("user_id = ?", params["uid"]).Find(&v2rays)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -53,7 +46,7 @@ func (Dispatcher) ListProxyProtocols(c *gin.Context) {
 	}
 
 	var vless []proxy.Vless
-	err = session.Table("vless").Where("user_id = ?", params["uid"]).Find(&vless)
+	err = engine.Table("vless").Where("user_id = ?", params["uid"]).Find(&vless)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -63,7 +56,6 @@ func (Dispatcher) ListProxyProtocols(c *gin.Context) {
 		})
 		return
 	}
-	session.Commit()
 
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
 		Code: serve.StatusOK,

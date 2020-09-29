@@ -23,6 +23,13 @@ type ProtocolParam struct {
 	NetSecurity string
 }
 
+// SettingsParam .
+type SettingsParam struct {
+	Protocol string `json:"protocol"`
+	Address  string `json:"address"`
+	Port     int    `json:"port"`
+}
+
 // Status v2ray 服务器状态
 type Status struct {
 	protocol string

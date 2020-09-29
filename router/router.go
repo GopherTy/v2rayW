@@ -37,10 +37,12 @@ func (Router) Route(engine *gin.Engine) {
 
 	// v2ray
 	v2rayGroup := engine.Group("/api/v2ray")
-	v2rayGroup.POST("/start", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Start) // 启动
-	v2rayGroup.GET("/stop", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Stop)    // 关闭
-	v2rayGroup.GET("/logs", ctl.V2rayDispathcer.Logs)                                      // 日志( websocket )
-	v2rayGroup.GET("/status", ctl.V2rayDispathcer.Status)                                  // v2ray状态( websocket )
+	v2rayGroup.POST("/start", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Start)              // 启动
+	v2rayGroup.GET("/stop", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Stop)                 // 关闭
+	v2rayGroup.GET("/logs", ctl.V2rayDispathcer.Logs)                                                   // 日志( websocket )
+	v2rayGroup.GET("/status", ctl.V2rayDispathcer.Status)                                               // v2ray状态( websocket )
+	v2rayGroup.GET("/listSettings", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.ListSettings) // 获取参数配置
+	v2rayGroup.POST("/settings", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Settings)        // 参数设置
 
 	// protocol
 	protocolGroup := engine.Group("/api/protocol")

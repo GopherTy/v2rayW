@@ -2,6 +2,7 @@ package v2ray
 
 import (
 	"bufio"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -323,6 +324,72 @@ func (Dispatcher) Status(c *gin.Context) {
 	}
 }
 
+// Settings 修改 v2ray 的配置文件
+func (Dispatcher) Settings(c *gin.Context) {
+	var param SettingsParam
+	err := c.ShouldBindWith(&param, binding.Default(c.Request.Method, c.ContentType()))
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusParamNotMatched,
+			Description: "解析参数错误",
+			Error:       err.Error(),
+		})
+		return
+	}
+
+	path := utils.BasePath() + "/v2ray.json"
+	mu.Lock()
+	cnf.Inbounds[0]["listen"] = param.Address
+	cnf.Inbounds[0]["port"] = param.Port
+	cnf.Inbounds[0]["protocol"] = param.Protocol
+
+	content, err := json.MarshalIndent(cnf, "", "	")
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusServerError,
+			Description: "保存失败",
+			Error:       err.Error(),
+		})
+		return
+	}
+	err = ioutil.WriteFile(path, content, os.ModePerm)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusServerError,
+			Description: "保存失败",
+			Error:       err.Error(),
+		})
+		return
+	}
+	mu.Unlock()
+
+	c.JSON(http.StatusOK, model.BackToFrontEndData{
+		Code: serve.StatusOK,
+		Data: map[string]interface{}{
+			"msg": "保存成功",
+		},
+	})
+}
+
+// ListSettings 获取 v2ray 配置文件参数
+func (Dispatcher) ListSettings(c *gin.Context) {
+	settings := map[string]interface{}{
+		"address":  cnf.Inbounds[0]["listen"],
+		"port":     cnf.Inbounds[0]["port"],
+		"protocol": cnf.Inbounds[0]["protocol"],
+	}
+	c.JSON(http.StatusOK, model.BackToFrontEndData{
+		Code: serve.StatusOK,
+		Data: map[string]interface{}{
+			"msg":      "获取成功",
+			"settings": settings,
+		},
+	})
+}
+
 // parmasToJSON 将 v2ray 启动参数转化为配置文件
 func parmasToJSON(c *gin.Context) (protocol string, id int, err error) {
 	// 绑定参数
@@ -336,15 +403,20 @@ func parmasToJSON(c *gin.Context) (protocol string, id int, err error) {
 	var content []byte
 	switch strings.ToUpper(param.Protocol) {
 	case "VMESS":
-		content, err = parseVmessOutbound(&param)
+		err = parseVmessOutbound(param)
 		if err != nil {
 			return
 		}
 	case "VLESS":
-		content, err = parseVlessOutbound(&param)
+		err = parseVlessOutbound(param)
 		if err != nil {
 			return
 		}
+	}
+
+	content, err = json.MarshalIndent(cnf, "", "	")
+	if err != nil {
+		return
 	}
 
 	err = ioutil.WriteFile(path, content, os.ModePerm)

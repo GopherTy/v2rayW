@@ -1,13 +1,9 @@
 package v2ray
 
-import (
-	"encoding/json"
-)
-
 // 解析 vmess 协议
-func parseVmessOutbound(param *ProtocolParam) (content []byte, err error) {
-	mu.Lock()
-	defer mu.Unlock()
+func parseVmessOutbound(param ProtocolParam) (err error) {
+	// mu.Lock()
+	// defer mu.Unlock()
 
 	//  设置协议
 	vmess := map[string]interface{}{
@@ -42,27 +38,22 @@ func parseVmessOutbound(param *ProtocolParam) (content []byte, err error) {
 	}
 
 	if len(cnf.Outbounds) != 0 {
-		for _, outbound := range cnf.Outbounds {
+		for i, outbound := range cnf.Outbounds {
 			if outbound["protocol"] == "vmess" {
-				outbound = vmess
-				break
+				cnf.Outbounds[i] = vmess
+				return
 			}
 		}
 	}
 	cnf.Outbounds = append(cnf.Outbounds, vmess)
 
-	content, err = json.MarshalIndent(cnf, "", "	")
-	if err != nil {
-		return
-	}
-
 	return
 }
 
 // 解析 vless 协议
-func parseVlessOutbound(param *ProtocolParam) (content []byte, err error) {
-	mu.Lock()
-	defer mu.Unlock()
+func parseVlessOutbound(param ProtocolParam) (err error) {
+	// mu.Lock()
+	// defer mu.Unlock()
 
 	//  设置协议
 	vless := map[string]interface{}{
@@ -75,8 +66,8 @@ func parseVlessOutbound(param *ProtocolParam) (content []byte, err error) {
 					"users": []map[string]interface{}{
 						{
 							"id":         param.UserID,
-							"flow":       "",
-							"encryption": "none",
+							"flow":       param.Flow,
+							"encryption": param.Encryption,
 							"level":      param.Level,
 						},
 					},
@@ -97,19 +88,14 @@ func parseVlessOutbound(param *ProtocolParam) (content []byte, err error) {
 	}
 
 	if len(cnf.Outbounds) != 0 {
-		for _, outbound := range cnf.Outbounds {
+		for i, outbound := range cnf.Outbounds {
 			if outbound["protocol"] == "vless" {
-				outbound = vless
-				break
+				cnf.Outbounds[i] = vless
+				return
 			}
 		}
 	}
 	cnf.Outbounds = append(cnf.Outbounds, vless)
-
-	content, err = json.MarshalIndent(cnf, "", "	")
-	if err != nil {
-		return
-	}
 
 	return
 }
