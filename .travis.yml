@@ -9,7 +9,7 @@ go:
 env:
   - GO111MODULE=on
 script:
-  - wget https://github.com/v2fly/v2ray-core/archive/v4.29.0.tar.gz && tar -zxvf  v4.29.0.tar.gz -C $GOPATH/src
+  - wget https://github.com/v2fly/v2ray-core/archive/v4.29.0.tar.gz && tar -zxvf  v4.29.0.tar.gz -C $GOPATH/src/github.com/GopherTy/
   - go install github.com/rakyll/statik
   - ./build.sh s view 
   - ./build.sh l 

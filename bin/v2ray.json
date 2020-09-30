@@ -46,36 +46,6 @@
 	],
 	"outbounds": [
 		{
-			"mux": {
-				"concurrency": 8,
-				"enabled": false
-			},
-			"protocol": "vless",
-			"settings": {
-				"vnext": [
-					{
-						"address": "xxx.gopherty.info",
-						"port": 443,
-						"users": [
-							{
-								"encryption": "none",
-								"flow": "",
-								"id": "03104a69-fdfd-457e-99f2-be78257f6eda",
-								"level": 1
-							}
-						]
-					}
-				]
-			},
-			"streamSettings": {
-				"network": "ws",
-				"security": "tls",
-				"wsSettings": {
-					"path": "/video"
-				}
-			}
-		},
-		{
 			"protocol": "freedom",
 			"settings": {},
 			"tag": "direct"
