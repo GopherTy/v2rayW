@@ -16,8 +16,6 @@
 vendor/
 
 # 自定义
-bin/v2ray*
+bin/v2rayW*
 bin/log
-bin/v2ray.json
-bin/test.json
 .vscode

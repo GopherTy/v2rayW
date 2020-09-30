@@ -1,0 +1,87 @@
+{
+	"log": {
+		"access": "",
+		"error": "",
+		"loglevel": "warning"
+	},
+	"api": null,
+	"dns": {},
+	"routing": {
+		"domainStrategy": "IPOnDemand",
+		"rules": [
+			{
+				"domain": [
+					"geosite:cn"
+				],
+				"outboundTag": "direct",
+				"type": "field"
+			},
+			{
+				"ip": [
+					"geoip:cn",
+					"geoip:private"
+				],
+				"outboundTag": "direct",
+				"type": "field"
+			}
+		]
+	},
+	"policy": {},
+	"inbounds": [
+		{
+			"listen": "127.0.0.1",
+			"port": 1080,
+			"protocol": "socks",
+			"settings": {
+				"auth": "noauth"
+			},
+			"sniffing": {
+				"destOverride": [
+					"http",
+					"tls"
+				],
+				"enabled": true
+			}
+		}
+	],
+	"outbounds": [
+		{
+			"mux": {
+				"concurrency": 8,
+				"enabled": false
+			},
+			"protocol": "vless",
+			"settings": {
+				"vnext": [
+					{
+						"address": "xxx.gopherty.info",
+						"port": 443,
+						"users": [
+							{
+								"encryption": "none",
+								"flow": "",
+								"id": "03104a69-fdfd-457e-99f2-be78257f6eda",
+								"level": 1
+							}
+						]
+					}
+				]
+			},
+			"streamSettings": {
+				"network": "ws",
+				"security": "tls",
+				"wsSettings": {
+					"path": "/video"
+				}
+			}
+		},
+		{
+			"protocol": "freedom",
+			"settings": {},
+			"tag": "direct"
+		}
+	],
+	"transport": {},
+	"stats": {},
+	"reverse": {}
+}

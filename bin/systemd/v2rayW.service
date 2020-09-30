@@ -1,0 +1,13 @@
+[Unit]
+Description=v2rayW service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/v2rayW/v2rayW -r=true
+KillMode=control-group
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

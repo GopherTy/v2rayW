@@ -5,10 +5,11 @@ os: linux
 dist: xenial
 
 go:
-- "1.12"
+- "1.15"
 env:
   - GO111MODULE=on
 script:
+  - wget https://github.com/v2fly/v2ray-core/archive/v4.29.0.tar.gz && tar -zxvf  v4.29.0.tar.gz
   - go install github.com/rakyll/statik
   - ./build.sh s view 
   - ./build.sh l 
