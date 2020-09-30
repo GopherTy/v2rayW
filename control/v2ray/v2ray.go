@@ -20,12 +20,6 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gorilla/websocket"
 
-	// v2ray core 启动的依赖
-	_ "v2ray.com/core/app/dispatcher"
-	_ "v2ray.com/core/app/proxyman/inbound"
-	_ "v2ray.com/core/app/proxyman/outbound"
-	_ "v2ray.com/core/main/json"
-
 	"v2ray.com/core"
 
 	"github.com/gin-gonic/gin"
@@ -397,6 +391,30 @@ func parmasToJSON(c *gin.Context) (protocol string, id int, err error) {
 	err = c.ShouldBindWith(&param, binding.Default(c.Request.Method, c.ContentType()))
 	if err != nil {
 		return
+	}
+
+	// 国内直连，开启后启动 v2ray 启动会变慢。
+	if param.Direct {
+		cnf.Routing = map[string]interface{}{
+			"domainStrategy": "IPOnDemand",
+			"rules": []map[string]interface{}{
+				map[string]interface{}{
+					"type":        "field",
+					"outboundTag": "direct",
+					"domain":      []string{"geosite:cn"}, // 中国大陆主流网站的域名
+				},
+				map[string]interface{}{
+					"type":        "field",
+					"outboundTag": "direct",
+					"ip": []string{
+						"geoip:cn",      // 中国大陆的 IP
+						"geoip:private", // 私有地址 IP，如路由器等
+					},
+				},
+			},
+		}
+	} else {
+		cnf.Routing = map[string]interface{}{}
 	}
 
 	path := utils.BasePath() + "/v2ray.json"

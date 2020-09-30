@@ -31,6 +31,9 @@ type Vless struct {
 	NetSecurity string `xorm:"net_security"`
 	Path        string `xorm:"path"`
 	Domains     string `xorm:"domains"`
+
+	// 国内直连
+	Direct bool `xorm:"direct default('false')"`
 }
 
 // TableName v2ray的表名

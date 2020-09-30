@@ -2,8 +2,8 @@ package v2ray
 
 // 解析 vmess 协议
 func parseVmessOutbound(param ProtocolParam) (err error) {
-	// mu.Lock()
-	// defer mu.Unlock()
+	mu.Lock()
+	defer mu.Unlock()
 
 	//  设置协议
 	vmess := map[string]interface{}{
@@ -37,23 +37,20 @@ func parseVmessOutbound(param ProtocolParam) (err error) {
 		},
 	}
 
-	if len(cnf.Outbounds) != 0 {
-		for i, outbound := range cnf.Outbounds {
-			if outbound["protocol"] == "vmess" {
-				cnf.Outbounds[i] = vmess
-				return
-			}
-		}
+	if cnf.Outbounds[0]["protocol"] == "freedom" {
+		cnf.Outbounds = append(cnf.Outbounds, vmess)
+		cnf.Outbounds[0], cnf.Outbounds[1] = cnf.Outbounds[1], cnf.Outbounds[0]
+		return
 	}
-	cnf.Outbounds = append(cnf.Outbounds, vmess)
 
+	cnf.Outbounds[0] = vmess
 	return
 }
 
 // 解析 vless 协议
 func parseVlessOutbound(param ProtocolParam) (err error) {
-	// mu.Lock()
-	// defer mu.Unlock()
+	mu.Lock()
+	defer mu.Unlock()
 
 	//  设置协议
 	vless := map[string]interface{}{
@@ -87,15 +84,12 @@ func parseVlessOutbound(param ProtocolParam) (err error) {
 		},
 	}
 
-	if len(cnf.Outbounds) != 0 {
-		for i, outbound := range cnf.Outbounds {
-			if outbound["protocol"] == "vless" {
-				cnf.Outbounds[i] = vless
-				return
-			}
-		}
+	if cnf.Outbounds[0]["protocol"] == "freedom" {
+		cnf.Outbounds = append(cnf.Outbounds, vless)
+		cnf.Outbounds[0], cnf.Outbounds[1] = cnf.Outbounds[1], cnf.Outbounds[0]
+		return
 	}
-	cnf.Outbounds = append(cnf.Outbounds, vless)
 
+	cnf.Outbounds[0] = vless
 	return
 }

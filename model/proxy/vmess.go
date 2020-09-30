@@ -23,6 +23,9 @@ type Vmess struct {
 	Path        string `xorm:"path"`
 
 	Domains string
+
+	// 国内直连
+	Direct bool `xorm:"direct default('false')"`
 }
 
 // TableName v2ray的表名

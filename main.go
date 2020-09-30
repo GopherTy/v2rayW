@@ -9,6 +9,9 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/gopherty/v2rayW/statik"
 
+	// v2ray core 启动的依赖
+	_ "v2ray.com/core/main/distro/all"
+
 	"github.com/gopherty/v2rayW/config"
 	"github.com/gopherty/v2rayW/initialization"
 	"github.com/gopherty/v2rayW/logger"

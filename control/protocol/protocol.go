@@ -100,6 +100,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 			NetSecurity: params.NetSecurity,
 			Path:        params.Path,
 			Domains:     params.Domains,
+			Direct:      params.Direct,
 		}
 		_, err = engine.Table(v2ray.TableName()).Insert(v2ray)
 		if err != nil {
@@ -127,6 +128,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 			NetSecurity: params.NetSecurity,
 			Path:        params.Path,
 			Domains:     params.Domains,
+			Direct:      params.Direct,
 		}
 		_, err = engine.Table(vless.TableName()).Insert(vless)
 		if err != nil {
@@ -245,6 +247,7 @@ func (Dispatcher) UpdateProxyProtocol(c *gin.Context) {
 			Path:        params.Path,
 			Protocol:    params.Protocol,
 			Domains:     params.Domains,
+			Direct:      params.Direct,
 		}
 		_, err := engine.Table(v2ray.TableName()).AllCols().Where(" id = ?", params.ID).Update(v2ray)
 		if err != nil {
@@ -271,6 +274,7 @@ func (Dispatcher) UpdateProxyProtocol(c *gin.Context) {
 			Path:        params.Path,
 			Protocol:    params.Protocol,
 			Domains:     params.Domains,
+			Direct:      params.Direct,
 		}
 		_, err := engine.Table(vless.TableName()).AllCols().Where(" id = ?", params.ID).Update(vless)
 		if err != nil {

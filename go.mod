@@ -9,7 +9,6 @@ require (
 	github.com/go-redis/redis/v7 v7.4.0
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/go-xorm/xorm v0.7.9
-	github.com/golang/protobuf v1.4.2
 	github.com/gopherty/broadcaster v1.0.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/myesui/uuid v1.0.0 // indirect

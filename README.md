@@ -1,6 +1,6 @@
 # v2rayW
 
-本项目为 `ProjectV` 项目中 `v2ray-core` 的 web 客户端。通过网页端配置代理协议进行科学上网。目前只支持 `vmess` 协议，其他协议和更多功能将之后进行迭代。
+本项目为 `ProjectV`（迁移至 v2fly） 项目中 `v2ray-core` 的 web 客户端。通过网页端配置代理协议进行科学上网。目前支持 `vmess` 、`vless` 协议，其他协议和更多功能将之后进行迭代。
 
 ## Install 
 
@@ -45,7 +45,6 @@
         "Development": false, // 是否为开发模式
         // 若以下两项都不配置，默认日志打印在控制台。
         "AppLogsPath": "", // 应用日志输出位置 
-        "GinLogsPath": "" // Gin 框的日志输出位置
     },
     // Redis 数据库配置
     "Redis": {
@@ -56,15 +55,23 @@
 
 ## Usage
 
-**默认本地浏览器配置代理端口为 1080，协议为 sockt5。暂不支持修改！！！**  
+成功启动应用后打开 http://localhost:9200 使用，默认端口为 9200，可以在配置文件（config.json）中进行修改。
 
-![local_config](https://github.com/GopherTy/v2ray-web/blob/master/assets/local_proxy_config.png)
+Step1: 设置浏览器的代理协议，默认代理协议为 socks5 暂不支持修改。 默认代理端口为 1080 ，可以通过参数设置进行修改！
 
-运行应用后，默认端口为 9200，可以在配置文件中进行修改。http://localhost:9200
+Step2: 在服务管理里配置好正确的代理协议，点击启动按钮。  
 
-![主页](https://github.com/GopherTy/v2ray-web/blob/master/assets/index.png)
+以下是相关功能截图
 
-![v2ray](https://github.com/GopherTy/v2ray-web/blob/master/assets/v2ray.png)
+![index](https://github.com/GopherTy/v2rayW/blob/master/assets/index.png)
+
+![protocol](https://github.com/GopherTy/v2rayW/blob/master/assets/protocol.png)
+
+![add](https://github.com/GopherTy/v2rayW/blob/master/assets/add.png)
+
+![add1](https://github.com/GopherTy/v2rayW/blob/master/assets/add1.png)
+
+![settings](https://github.com/GopherTy/v2rayW/blob/master/assets/settings.png)
 
 ## Contributing
 

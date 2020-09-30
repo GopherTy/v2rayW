@@ -21,6 +21,9 @@ type ProtocolParam struct {
 	Domains     string `json:"domains"`
 	Path        string `json:"path"`
 	NetSecurity string
+
+	// 国内直连
+	Direct bool `json:"direct"`
 }
 
 // SettingsParam .

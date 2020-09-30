@@ -26,6 +26,9 @@ type Content struct {
 	Domains     string `json:"domains"`     // 伪装域名
 	Path        string `json:"path"`        // 路径
 	NetSecurity string `json:"netSecurity"` // 伪装网络协议的加密方式
+
+	// 国内直连
+	Direct bool `json:"direct"`
 }
 
 // DeleteParams 删除协议参数
