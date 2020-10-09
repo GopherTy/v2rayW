@@ -3,11 +3,9 @@ package main
 import (
 	"flag"
 
-	"github.com/gin-contrib/pprof"
-
 	"github.com/gin-gonic/gin"
-	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/gopherty/v2rayW/statik"
+	_ "github.com/mattn/go-sqlite3"
 
 	// v2ray core 启动的依赖
 	_ "v2ray.com/core/main/distro/all"
@@ -59,8 +57,6 @@ func main() {
 	// 路由功能注册
 	var r router.Router
 	r.Route(engine)
-
-	pprof.Register(engine)
 
 	var err error
 	// 验证服务器是否以HTTPS的方式启动

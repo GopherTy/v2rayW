@@ -1,7 +1,6 @@
 package db
 
 import (
-	"github.com/go-redis/redis/v7"
 	"github.com/go-xorm/xorm"
 
 	"github.com/gopherty/v2rayW/config"
@@ -12,8 +11,7 @@ import (
 )
 
 var (
-	db     *xorm.Engine
-	client *redis.Client
+	db *xorm.Engine
 )
 
 // Register 数据库注册器
@@ -22,8 +20,6 @@ type Register struct {
 
 // Regist 实现 IRegister 接口，以注册获取初始化好的 db 对象。
 func (Register) Regist() {
-	initRedis() // 初始化 redis
-
 	var err error
 	cnf := config.Configure()
 
@@ -143,26 +139,6 @@ func (Register) Regist() {
 		}
 	}
 	db.Sync2(&auth.Role{}, &auth.Auth{})
-}
-
-// initRedis 注册 redis .
-func initRedis() {
-	cnf := config.Configure()
-
-	client = redis.NewClient(&redis.Options{
-		Addr: cnf.Redis.Address,
-	})
-
-	_, err := client.Ping().Result()
-	if err != nil {
-		logger.Logger().Fatal(err.Error())
-	}
-	logger.Logger().Info("Init redis success")
-}
-
-// Client 获取 redis 客户端对象
-func Client() *redis.Client {
-	return client
 }
 
 // Engine 获取 db 对象

@@ -14,7 +14,6 @@ type Config struct {
 	DB     DataBase // 配置文件数据库对象
 	HTTP   HTTP     // HTTP 协议配置对象
 	Logger Logger   // Logger 配置对象
-	Redis  Redis    // Redis 配置对象
 }
 
 // HTTP HTTP协议配置对象
@@ -39,18 +38,12 @@ type DataBase struct {
 	UserManageDisable bool //是否开启用户管理
 }
 
-// Redis redis 配置
-type Redis struct {
-	Address string // redis 连接地址
-}
-
 // Logger 日志对象
 type Logger struct {
 	Level       string // 日志等级：日志等级: debug,info,warn,error,dpanic,panic,fatal
 	Development bool   // 是否开启开发模式
 	Encoding    string // 日志输出格式
 	AppLogsPath string // 日志文件输出位置
-	GinLogsPath string // gin框架日志输出位置
 }
 
 // config  单例全局配置对象

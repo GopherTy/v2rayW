@@ -126,10 +126,6 @@ func (Dispatcher) Login(c *gin.Context) {
 	if err != nil {
 		logger.Logger().Error(err.Error())
 	}
-	err = token.CreateAuth(user.ID, t)
-	if err != nil {
-		logger.Logger().Error(err.Error())
-	}
 
 	// 登陆成功后给服务器设置
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
@@ -146,24 +142,9 @@ func (Dispatcher) Login(c *gin.Context) {
 
 // Logout 用户登出
 func (Dispatcher) Logout(c *gin.Context) {
-	access, err := token.ExtractTokenMetadata(c.Request)
-	if err != nil {
-		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusUnauthorized, model.BackToFrontEndData{
-			Code:  serve.StatusUnauthorized,
-			Error: "unauthorized",
-		})
-		return
-	}
-	deleted, err := token.DeleteAuth(access.AccessUUID)
-	if err != nil || deleted == 0 {
-		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusUnauthorized, model.BackToFrontEndData{
-			Code:  serve.StatusUnauthorized,
-			Error: "unauthorized",
-		})
-		return
-	}
+	// 需要手动设置 refresh token 过期，所以应该存储 refresh token。
+	// 验证时，应该获取存储的 refresh token 而不是用户的 token。目前不需要过期 refresh token
+
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
 		Code: serve.StatusOK,
 		Data: map[string]interface{}{

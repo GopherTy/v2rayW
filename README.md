@@ -4,31 +4,27 @@
 
 ## Install 
 
-相对于其他 `v2ray` 客户端，本客户端相对来说更适用于Linux平台，它能在 web 端对 `v2ray` 进行配置管理。
+安装步骤如下：
 
-其实做这个项目的目的有二。其一是对`v2ray`客户端开发比较感兴趣。其二是为了提升自己的编程能力，练习一些主流且实用的编程技术。
+1.下载对应平台最新的 release 。或者 fork 该项目然后执行编译脚本 `build.sh`  。
 
-若有幸你使用了本客户端，还请你在使用后提出你的宝贵意见。有在使用过程中发现的任何 `bug` 或对应的功能需求请开启 `issue` 进行提交。
+> 注意：若需要打包 view 到 go 中需要安装 statik。 
+>
+> 安装命令: go get github.com/rakyll/statik @v0.1.7
 
-1.在运行该项目前搭建项目的依赖环境。安装 `MySQL` 和 `Redis` 数据库，用于系统登录和协议配置。相关的安装教程网上比较多，可以选择对应平台的教程进行安装。Linux 环境推荐使用 docker 进行安装。相对轻量！
-
-2.下载对应平台的 release 。或者下载该项目然后执行安装脚本 `build.sh`。
-
-3.安装好依赖环境后，配置项目启动环境。具体说明如下：
-
-打开 bin 文件夹下的 `config.json`  文件
+2.运行对应平台的可执行文件即可使用。若需要自定义配置项目启动环境，打开 bin 文件夹下的 `config.json`  文件进行配置。配置说明如下：
 
 ```go
 {  
-    // MySQL 数据库配置
+    // 数据库配置
     "DB": {   
-        "Driver": "mysql",  // 数据库驱动
-        "Source": "ty:123@tcp(localhost:3306)/gopherty?charset=utf8", // 连接地址，@之前的为数据库的用户名和密码; () 之中的为数据库地址和端口; gopherty 表示数据库名称。 
+        "Driver": "sqlite3",  // 数据库驱动
+        "Source": "app.db", // 数据库文件
         "ShowSQL": false, // 是否开启 SQL 语句，默认不开启 。 
         "MaxOpenConns": 100, // 最大连接数
         "MaxIdleConns": 5, // 最大空闲数
         "Cached": 200, // 缓存
-        "UserManageDisable": true // 用户系统，用于创建表。
+        "UserManageDisable": false // 是否禁用用户系统。 注意：此选项不要修改，在最开始设计时是将该选项作为保留项。
     },
     // 服务器配置
     "HTTP": {
@@ -43,15 +39,13 @@
         "Level": "debug", // 日志等级
         "Encoding": "console", // 编码格式
         "Development": false, // 是否为开发模式
-        // 若以下两项都不配置，默认日志打印在控制台。
+        // 默认日志打印在控制台。
         "AppLogsPath": "", // 应用日志输出位置 
-    },
-    // Redis 数据库配置
-    "Redis": {
-        "Address": "localhost:6379" // 地址和端口。
     }
 }
 ```
+
+若有幸你使用了本客户端，还请你在使用后提出你的宝贵意见。有在使用过程中发现的任何 `bug` 或对应的功能需求请开启 `issue` 进行提交。
 
 ## Usage
 
