@@ -27,12 +27,12 @@ case $1 in
         buildView $2 
     ;;
     l|linux)
-        export GOOS=linux
+        export GOOS=linux CGO_ENABLED=1 
         cd $DirRoot && go build -ldflags "-s -w" -o "$DirRoot/bin/$Target"
     ;; 
     w|windows)
-        export  GOOS=windows
-        cd $DirRoot && go build -ldflags "-s -w" -o "$DirRoot/bin/$Target"
+	export CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ GOOS=windows GOARCH=amd64
+        cd $DirRoot && go build -ldflags "-s -w" -o "$DirRoot/bin/$Target".exe
     ;;
     t|test)
         for i in ${!TestItems[@]}
