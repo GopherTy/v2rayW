@@ -55,6 +55,15 @@ type Dispatcher struct {
 
 // Start 启动 v2ray 服务
 func (Dispatcher) Start(c *gin.Context) {
+	var err error
+	// 启动失败时还原之前的 instance 状态
+	preInstance := instance
+	defer func() {
+		if err != nil {
+			instance = preInstance
+		}
+	}()
+
 	// 将前端传过来的参数解析成 JSON 格式写入到文件中。
 	protocol, id, err := parmasToJSON(c)
 	if err != nil {
@@ -133,6 +142,14 @@ func (Dispatcher) Start(c *gin.Context) {
 		return
 	}
 
+	// 关闭之前启动成功的示例
+	if preInstance != nil {
+		err = preInstance.Close()
+		if err != nil {
+			logger.Logger().Error(err.Error())
+		}
+	}
+
 	// 发送日志
 	go func() {
 		for {
@@ -192,6 +209,8 @@ func (Dispatcher) Stop(c *gin.Context) {
 		})
 		return
 	}
+
+	instance = nil
 
 	// 保存 v2ray 的状态
 	mu.Lock()
@@ -413,8 +432,19 @@ func parmasToJSON(c *gin.Context) (protocol string, id int, err error) {
 				},
 			},
 		}
+		cnf.Outbounds = []map[string]interface{}{
+			map[string]interface{}{},
+			map[string]interface{}{
+				"protocol": "freedom",
+				"settings": map[string]interface{}{},
+				"tag":      "direct",
+			},
+		}
 	} else {
 		cnf.Routing = map[string]interface{}{}
+		cnf.Outbounds = []map[string]interface{}{
+			map[string]interface{}{},
+		}
 	}
 
 	path := utils.BasePath() + "/v2ray.json"

@@ -37,12 +37,6 @@ func parseVmessOutbound(param ProtocolParam) (err error) {
 		},
 	}
 
-	if cnf.Outbounds[0]["protocol"] == "freedom" {
-		cnf.Outbounds = append(cnf.Outbounds, vmess)
-		cnf.Outbounds[0], cnf.Outbounds[1] = cnf.Outbounds[1], cnf.Outbounds[0]
-		return
-	}
-
 	cnf.Outbounds[0] = vmess
 	return
 }
@@ -82,12 +76,6 @@ func parseVlessOutbound(param ProtocolParam) (err error) {
 			"enabled":     false,
 			"concurrency": 8,
 		},
-	}
-
-	if cnf.Outbounds[0]["protocol"] == "freedom" {
-		cnf.Outbounds = append(cnf.Outbounds, vless)
-		cnf.Outbounds[0], cnf.Outbounds[1] = cnf.Outbounds[1], cnf.Outbounds[0]
-		return
 	}
 
 	cnf.Outbounds[0] = vless
