@@ -44,13 +44,7 @@
 			}
 		}
 	],
-	"outbounds": [
-		{
-			"protocol": "freedom",
-			"settings": {},
-			"tag": "direct"
-		}
-	],
+	"outbounds": [],
 	"transport": {},
 	"stats": {},
 	"reverse": {}
