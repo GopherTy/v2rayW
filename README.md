@@ -1,8 +1,10 @@
 # v2rayW
 
-本项目为 `ProjectV`（迁移至 v2fly） 项目中 `v2ray-core` 的 web 客户端。通过网页端配置代理协议进行科学上网。目前支持 `vmess` 、`vless` 协议，其他协议和更多功能将之后进行迭代。
+本项目为 `ProjectV`（迁移至 v2fly） 项目中 `v2ray-core` 的 web 客户端。通过网页端配置代理协议进行科学上网。目前支持 `vmess` 、`vless` 协议，其他协议和更多功能将在之后进行迭代。
 
 ## Install 
+
+本客户端支持 linux、windows 请下载对应平台的 release 进行安装使用。
 
 安装步骤如下：
 
@@ -45,6 +47,8 @@
 }
 ```
 
+> 说明：若想在 linux 或 windows 以服务的形式启动，请查看 bin/ 文件夹下的 systemd/ 或 winServcie/ 按 usage 文件说明进行配置。
+
 若有幸你使用了本客户端，还请你在使用后提出你的宝贵意见。有在使用过程中发现的任何 `bug` 或对应的功能需求请开启 `issue` 进行提交。
 
 ## Usage
@@ -57,15 +61,15 @@ Step2: 在服务管理里配置好正确的代理协议，点击启动按钮。
 
 以下是相关功能截图
 
-![index](https://github.com/GopherTy/v2rayW/blob/master/assets/index.png)
+![index.png](https://i.loli.net/2020/10/12/pq5rE8VAb1xJIWw.png)
 
-![protocol](https://github.com/GopherTy/v2rayW/blob/master/assets/protocol.png)
+![protocol.png](https://i.loli.net/2020/10/12/Kp1Wwbh68xz5mIR.png)
 
-![add](https://github.com/GopherTy/v2rayW/blob/master/assets/add.png)
+![add.png](https://i.loli.net/2020/10/12/GMcHvKTp9XfUiNh.png)
 
-![add1](https://github.com/GopherTy/v2rayW/blob/master/assets/add1.png)
+![add1.png](https://i.loli.net/2020/10/12/OA3WPFoxstwnaKp.png)
 
-![settings](https://github.com/GopherTy/v2rayW/blob/master/assets/settings.png)
+![settings.png](https://i.loli.net/2020/10/12/9FYBskCuot6qVri.png)
 
 ## Contributing
 

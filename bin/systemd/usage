@@ -1,0 +1,5 @@
+1.设置 v2rayW 的启动路径。在 v2rayW.service 文件中
+ExecStart=/opt/v2rayW/v2rayW -r=true
+2.设置好启动路径后，将 v2rayW.service 移动到 /etc/systemd/system/ 文件夹中。
+3.使用 systemctl start v2rayW.service 命令启动 v2rayW。
+4.开机自启动命令 systemctl enable v2rayW.service 

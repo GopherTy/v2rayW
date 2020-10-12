@@ -1,0 +1,9 @@
+1.管理员打开 cmd，使用 instsrv.exe 和 srvany.exe 注册 v2rayW 服务。
+
+命令：instsrv.exe v2rayW(自定义服务名称) .../srvany.exe(该文件所在的全路径)
+
+2.服务注册成功后，使用快捷键 windows + r ，输入 redegit 打开注册表，找到HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\v2rayW 文件夹右键点击该文件夹，选择新建 key 名称为 Parameters 。编辑 Parameters 选择新建字符串值，键名称为 Application，值为 v2rayW.exe 文件的所在位置。如 D:\Program Files\Dowload\v2rayW.exe
+
+3.回到桌面右键我的电脑管理，找到 v2rayW 服务，右键启动该服务即可。
+
+4.之后每次开机只需要在浏览器打开 localhost:9200 即可使用该应用。
