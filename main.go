@@ -34,20 +34,6 @@ func main() {
 	// 配置对象
 	cnf := config.Configure()
 
-	// 是否启用 Gin 日志输出
-	// if cnf.Logger.GinLogsPath != "" {
-	// 	err := utils.CreatePath(cnf.Logger.GinLogsPath)
-	// 	if err != nil {
-	// 		logger.Logger().Fatal(err.Error())
-	// 	}
-
-	// 	f, err := os.Create(cnf.Logger.GinLogsPath)
-	// 	if err != nil {
-	// 		logger.Logger().Fatal(err.Error())
-	// 	}
-	// 	gin.DefaultWriter = io.MultiWriter(os.Stdout, f)
-	// }
-
 	// 配置项目是否为稳定版,SetMode函数应该在gin.Default之前调用。
 	if releaseMode {
 		gin.SetMode(gin.ReleaseMode)

@@ -8,6 +8,7 @@ import (
 	"github.com/gopherty/v2rayW/model/auth"
 	"github.com/gopherty/v2rayW/model/proxy"
 	"github.com/gopherty/v2rayW/model/users"
+	"github.com/gopherty/v2rayW/utils"
 )
 
 var (
@@ -29,7 +30,8 @@ func (Register) Regist() {
 		logger.Logger().Fatal("Please configure database dirver or source")
 	}
 
-	db, err = xorm.NewEngine(cnf.DB.Driver, cnf.DB.Source)
+	path := utils.BasePath() + "/" + cnf.DB.Source
+	db, err = xorm.NewEngine(cnf.DB.Driver, path)
 	if err != nil {
 		logger.Logger().Fatal(err.Error())
 	}
