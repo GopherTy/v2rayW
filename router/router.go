@@ -46,8 +46,9 @@ func (Router) Route(engine *gin.Engine) {
 
 	// protocol
 	protocolGroup := engine.Group("/api/protocol")
-	protocolGroup.POST("/add", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.AddProxyProtocol)       // 增加代理协议
-	protocolGroup.POST("/delete", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.DeleteProxyProtocol) // 增加代理协议
-	protocolGroup.POST("/update", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.UpdateProxyProtocol) // 获取代理协议
-	protocolGroup.POST("/list", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.ListProxyProtocols)    // 获取代理协议
+	protocolGroup.POST("/add", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.AddProxyProtocol)             // 增加代理协议
+	protocolGroup.POST("/delete", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.DeleteProxyProtocol)       // 增加代理协议
+	protocolGroup.POST("/update", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.UpdateProxyProtocol)       // 获取代理协议
+	protocolGroup.POST("/list", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.ListProxyProtocols)          // 获取代理协议
+	protocolGroup.POST("/subscribe", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.SubscribeProxyProtocol) // 订阅代理协议
 }
