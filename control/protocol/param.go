@@ -37,6 +37,14 @@ type DeleteParams struct {
 	ProtocolID   int    `json:"id"`   // 协议 id
 }
 
+// SubcribeParams 订阅协议参数
+type SubcribeParams struct {
+	ID   int    `json:"id"`
+	UID  int    `json:"uid"`
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
 // 解码协议格式
 // 服务商的 vmess 格式
 type vmess struct {

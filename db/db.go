@@ -69,6 +69,7 @@ func (Register) Regist() {
 			logger.Logger().Fatal(err.Error())
 		}
 	}
+	// vless 表
 	exists, err = db.IsTableExist(&proxy.Vless{})
 	if err != nil {
 		logger.Logger().Fatal(err.Error())
@@ -79,7 +80,18 @@ func (Register) Regist() {
 			logger.Logger().Fatal(err.Error())
 		}
 	}
-	db.Sync2(&proxy.Vmess{}, &proxy.Vless{})
+	// 订阅地址表
+	exists, err = db.IsTableExist(&proxy.Subscribe{})
+	if err != nil {
+		logger.Logger().Fatal(err.Error())
+	}
+	if !exists {
+		err = db.CreateTables(&proxy.Subscribe{})
+		if err != nil {
+			logger.Logger().Fatal(err.Error())
+		}
+	}
+	db.Sync2(&proxy.Vmess{}, &proxy.Vless{}, &proxy.Subscribe{})
 
 	// 是否关闭用户管理
 	if cnf.DB.UserManageDisable {

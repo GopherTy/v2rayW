@@ -6,26 +6,7 @@
 	},
 	"api": null,
 	"dns": {},
-	"routing": {
-		"domainStrategy": "IPOnDemand",
-		"rules": [
-			{
-				"domain": [
-					"geosite:cn"
-				],
-				"outboundTag": "direct",
-				"type": "field"
-			},
-			{
-				"ip": [
-					"geoip:cn",
-					"geoip:private"
-				],
-				"outboundTag": "direct",
-				"type": "field"
-			}
-		]
-	},
+	"routing": {},
 	"policy": {},
 	"inbounds": [
 		{
@@ -44,7 +25,38 @@
 			}
 		}
 	],
-	"outbounds": [],
+	"outbounds": [
+		{
+			"mux": {
+				"concurrency": 8,
+				"enabled": false
+			},
+			"protocol": "vless",
+			"settings": {
+				"vnext": [
+					{
+						"address": "www.gopherty.info",
+						"port": 443,
+						"users": [
+							{
+								"encryption": "none",
+								"flow": "",
+								"id": "1c85f1cc-9046-44c4-8c60-9cd283f1f9ed",
+								"level": 1
+							}
+						]
+					}
+				]
+			},
+			"streamSettings": {
+				"network": "ws",
+				"security": "tls",
+				"wsSettings": {
+					"path": "/tyvless"
+				}
+			}
+		}
+	],
 	"transport": {},
 	"stats": {},
 	"reverse": {}

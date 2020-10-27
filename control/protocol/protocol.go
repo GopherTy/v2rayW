@@ -306,6 +306,147 @@ func (Dispatcher) UpdateProxyProtocol(c *gin.Context) {
 	})
 }
 
+// ListSubscribeURL 获取用户所有的订阅地址
+func (Dispatcher) ListSubscribeURL(c *gin.Context) {
+	var params SubcribeParams
+	err := c.ShouldBind(&params)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusUnprocessableEntity, model.BackToFrontEndData{
+			Code:        serve.StatusServerError,
+			Description: "前端请求参数和后端绑定参数不匹配",
+			Error:       err.Error(),
+		})
+		return
+	}
+
+	var content []proxy.Subscribe
+	err = db.Engine().Where("user_id = ?", params.UID).Find(&content)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusDBError,
+			Description: "数据库错误",
+			Error:       err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, model.BackToFrontEndData{
+		Code: serve.StatusOK,
+		Data: map[string]interface{}{
+			"content": content,
+		},
+	})
+}
+
+// AddSubscribeURL 增加代理协议
+func (Dispatcher) AddSubscribeURL(c *gin.Context) {
+	// 获取 json 对象与后端数据结构绑定
+	var params SubcribeParams
+	err := c.ShouldBind(&params)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusUnprocessableEntity, model.BackToFrontEndData{
+			Code:        serve.StatusParamNotMatched,
+			Description: "前端请求参数和后端绑定参数不匹配",
+			Error:       err.Error(),
+		})
+		return
+	}
+
+	subscribe := &proxy.Subscribe{
+		UID:  uint64(params.UID),
+		Name: params.Name,
+		URL:  params.URL,
+	}
+	_, err = db.Engine().Insert(subscribe)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusDBError,
+			Description: "数据库错误",
+			Error:       err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, model.BackToFrontEndData{
+		Code: serve.StatusOK,
+		Data: map[string]interface{}{
+			"id": subscribe.ID,
+		},
+	})
+}
+
+// DeleteSubscribeURL 删除代理协议
+func (Dispatcher) DeleteSubscribeURL(c *gin.Context) {
+	var params SubcribeParams
+	err := c.ShouldBind(&params)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusUnprocessableEntity, model.BackToFrontEndData{
+			Code:        serve.StatusParamNotMatched,
+			Description: "前端请求参数和后端绑定参数不匹配",
+			Error:       err.Error(),
+		})
+		return
+	}
+
+	_, err = db.Engine().Delete(&proxy.Subscribe{
+		ID: uint64(params.ID),
+	})
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusDBError,
+			Description: "数据库错误",
+			Error:       err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, model.BackToFrontEndData{
+		Code:        serve.StatusOK,
+		Description: "删除成功",
+	})
+}
+
+// UpdateSubscribeURL 修改代理协议
+func (Dispatcher) UpdateSubscribeURL(c *gin.Context) {
+	var params SubcribeParams
+	err := c.ShouldBind(&params)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusUnprocessableEntity, model.BackToFrontEndData{
+			Code:        serve.StatusParamNotMatched,
+			Description: "前端请求参数和后端绑定参数不匹配",
+			Error:       err.Error(),
+		})
+		return
+	}
+
+	_, err = db.Engine().AllCols().Where(" id = ?", params.ID).Update(&proxy.Subscribe{
+		Name: params.Name,
+		UID:  uint64(params.UID),
+		URL:  params.URL,
+	})
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusDBError,
+			Description: "数据库错误",
+			Error:       err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, model.BackToFrontEndData{
+		Code:        serve.StatusOK,
+		Description: "修改成功",
+	})
+}
+
 // SubscribeProxyProtocol 订阅代理协议。
 // 支持服务提供商 vmess 协议格式 和 v2ray协议 vless 格式配置
 func (Dispatcher) SubscribeProxyProtocol(c *gin.Context) {
@@ -342,6 +483,47 @@ func (Dispatcher) SubscribeProxyProtocol(c *gin.Context) {
 			"vless": vlesss,
 		},
 	})
+}
+
+// ClearProxyProtocol 清空代理协议
+func (Dispatcher) ClearProxyProtocol(c *gin.Context) {
+	var params struct {
+		UID int `json:"uid"`
+	}
+
+	err := c.ShouldBind(&params)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusUnprocessableEntity, model.BackToFrontEndData{
+			Code:        serve.StatusParamNotMatched,
+			Description: "前端请求参数和后端绑定参数不匹配",
+			Error:       err.Error(),
+		})
+		return
+	}
+
+	session := db.Engine().NewSession()
+	err = session.Begin()
+	defer func() {
+		if err != nil {
+			session.Rollback()
+			logger.Logger().Error(err.Error())
+			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+				Code:        serve.StatusDBError,
+				Description: "数据库错误",
+				Error:       err.Error(),
+			})
+		} else {
+			session.Commit()
+			c.JSON(http.StatusOK, model.BackToFrontEndData{
+				Code:        serve.StatusOK,
+				Description: "清空成功",
+			})
+		}
+	}()
+
+	_, err = session.Delete(&proxy.Vless{UID: uint64(params.UID)})
+	_, err = session.Delete(&proxy.Vmess{UID: uint64(params.UID)})
 }
 
 func subscribe(uid int, url string) (vlesss []proxy.Vless, vmesss []proxy.Vmess, err error) {
