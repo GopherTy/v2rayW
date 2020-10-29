@@ -1,7 +1,7 @@
 package v2ray
 
-// 解析 vmess 协议
-func parseVmessOutbound(param ProtocolParam) (err error) {
+// ParseVmessOutbound 解析 vmess 协议
+func ParseVmessOutbound(param ProtocolParam) (err error) {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -41,8 +41,8 @@ func parseVmessOutbound(param ProtocolParam) (err error) {
 	return
 }
 
-// 解析 vless 协议
-func parseVlessOutbound(param ProtocolParam) (err error) {
+// ParseVlessOutbound 解析 vless 协议
+func ParseVlessOutbound(param ProtocolParam) (err error) {
 	mu.Lock()
 	defer mu.Unlock()
 

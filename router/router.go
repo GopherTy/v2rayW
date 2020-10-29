@@ -50,11 +50,12 @@ func (Router) Route(engine *gin.Engine) {
 	protocolGroup.POST("/delete", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.DeleteProxyProtocol) // 删除代理协议
 	protocolGroup.POST("/update", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.UpdateProxyProtocol) // 修改代理协议
 	protocolGroup.POST("/list", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.ListProxyProtocols)    // 获取代理协议
+	protocolGroup.POST("/clear", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.ClearProxyProtocol)   // 清空代理协议
 
-	protocolGroup.POST("/add/subscribe/url", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.AddSubscribeURL)       // 增加订阅地址
-	protocolGroup.POST("/delete/subscribe/url", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.DeleteSubscribeURL) // 删除订阅地址
-	protocolGroup.POST("/update/subscribe/url", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.UpdateSubscribeURL) // 修改订阅地址
-	protocolGroup.POST("/list/subscribe/url", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.ListSubscribeURL)     // 获取订阅地址
-	protocolGroup.POST("/subscribe", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.SubscribeProxyProtocol)        // 订阅代理协议
-	protocolGroup.POST("/clear", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.ClearProxyProtocol)                // 清空代理协议
+	subscribeGroup := engine.Group("/api/subscribe")
+	subscribeGroup.POST("/add", middleware.TokenAuthMiddleware(), ctl.SubscribeDispathcer.AddSubscribeURL)         // 增加订阅地址
+	subscribeGroup.POST("/delete", middleware.TokenAuthMiddleware(), ctl.SubscribeDispathcer.DeleteSubscribeURL)   // 删除订阅地址
+	subscribeGroup.POST("/update", middleware.TokenAuthMiddleware(), ctl.SubscribeDispathcer.UpdateSubscribeURL)   // 修改订阅地址
+	subscribeGroup.POST("/list", middleware.TokenAuthMiddleware(), ctl.SubscribeDispathcer.ListSubscribeURL)       // 获取订阅地址
+	subscribeGroup.POST("/pull", middleware.TokenAuthMiddleware(), ctl.SubscribeDispathcer.SubscribeProxyProtocol) // 订阅代理协议
 }

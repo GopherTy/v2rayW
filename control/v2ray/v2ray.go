@@ -417,12 +417,12 @@ func parmasToJSON(c *gin.Context) (protocol string, id int, err error) {
 		cnf.Routing = map[string]interface{}{
 			"domainStrategy": "IPOnDemand",
 			"rules": []map[string]interface{}{
-				map[string]interface{}{
+				{
 					"type":        "field",
 					"outboundTag": "direct",
 					"domain":      []string{"geosite:cn"}, // 中国大陆主流网站的域名
 				},
-				map[string]interface{}{
+				{
 					"type":        "field",
 					"outboundTag": "direct",
 					"ip": []string{
@@ -433,8 +433,8 @@ func parmasToJSON(c *gin.Context) (protocol string, id int, err error) {
 			},
 		}
 		cnf.Outbounds = []map[string]interface{}{
-			map[string]interface{}{},
-			map[string]interface{}{
+			{},
+			{
 				"protocol": "freedom",
 				"settings": map[string]interface{}{},
 				"tag":      "direct",
@@ -443,7 +443,7 @@ func parmasToJSON(c *gin.Context) (protocol string, id int, err error) {
 	} else {
 		cnf.Routing = map[string]interface{}{}
 		cnf.Outbounds = []map[string]interface{}{
-			map[string]interface{}{},
+			{},
 		}
 	}
 
@@ -451,12 +451,12 @@ func parmasToJSON(c *gin.Context) (protocol string, id int, err error) {
 	var content []byte
 	switch strings.ToUpper(param.Protocol) {
 	case "VMESS":
-		err = parseVmessOutbound(param)
+		err = ParseVmessOutbound(param)
 		if err != nil {
 			return
 		}
 	case "VLESS":
-		err = parseVlessOutbound(param)
+		err = ParseVlessOutbound(param)
 		if err != nil {
 			return
 		}
