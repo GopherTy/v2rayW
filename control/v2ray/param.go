@@ -16,6 +16,9 @@ type ProtocolParam struct {
 	Encryption string `json:"encryption"`
 	Level      int    `json:"level"`
 	Security   string `json:"security"`
+	// socks 协议参数
+	User   string `json:"user"`
+	Passwd string `json:"passwd"`
 
 	Network     string `json:"network"`
 	Domains     string `json:"domains"`

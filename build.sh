@@ -34,6 +34,10 @@ case $1 in
 	export CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ GOOS=windows GOARCH=amd64
         cd $DirRoot && go build -ldflags "-s -w" -o "$DirRoot/bin/$Target".exe
     ;;
+    # m|mac)
+    #     export GOOS=darwin CGO_ENABLED=1
+    #     cd $DirRoot && go build -ldflags "-s -w" -o "$DirRoot/bin/$Target".app
+    # ;;
     t|test)
         for i in ${!TestItems[@]}
         do 

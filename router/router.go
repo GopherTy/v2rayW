@@ -16,6 +16,69 @@ func (Router) Route(engine *gin.Engine) {
 	// 控制器
 	var ctl control.Controller
 
+	// // v1 REST API
+	// api := engine.Group("/api")
+	// v1 := api.Group("/v1")
+
+	// {
+	// 	// view
+	// 	v1.GET("/", ctl.ViewDispathcer.Redirect)
+	// 	v1.GET("/index", ctl.ViewDispathcer.Redirect)
+	// 	v1.GET("/index.html", ctl.ViewDispathcer.Redirect)
+
+	// 	view := v1.Group("/view")
+	// 	view.GET("/*path", ctl.ViewDispathcer.View)
+	// }
+
+	// {
+	// 	// auth
+	// 	auth := v1.Group("/auth")
+	// 	auth.POST("/token", ctl.UserDispacher.Login)
+	// 	auth.DELETE("/token", ctl.UserDispacher.Logout)
+
+	// 	auth.PATCH("/token", ctl.RefreshDispathce.RefreshToken)
+	// }
+
+	// {
+	// 	// user
+	// 	v1.POST("/user", ctl.UserDispacher.Join)
+	// 	v1.PATCH("/user/{id}", middleware.TokenAuthMiddleware(), ctl.UserDispacher.Passwd)
+	// }
+
+	// {
+	// 	// v2fly
+	// 	service := v1.Group("/service")
+	// 	{
+	// 		service.POST("/v2fly", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Start)
+	// 		service.DELETE("/v2fly", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Stop)
+
+	// 		service.GET("/v2fly/configuration", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.ListSettings)
+	// 		service.PATCH("/v2fly/configuration", middleware.TokenAuthMiddleware(), ctl.V2rayDispathcer.Settings)
+
+	// 		service.GET("/v2fly/logs", ctl.V2rayDispathcer.Logs)
+	// 		service.GET("/v2fly/state", ctl.V2rayDispathcer.Status)
+	// 	}
+
+	// 	{
+	// 		// proxy protocol
+	// 		v1.GET("/{uid}/protocols", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.ListProxyProtocols)
+	// 		v1.POST("/{uid}/protocol/{name}", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.AddProxyProtocol)
+	// 		v1.PATCH("/{uid}/protocol/{name}/{id}", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.UpdateProxyProtocol)
+	// 		v1.DELETE("/{uid}/protocol/{name}/{id}", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.DeleteProxyProtocol)
+	// 		v1.DELETE("/{uid}/protocol", middleware.TokenAuthMiddleware(), ctl.ProtocolDispathcer.ClearProxyProtocol)
+	// 	}
+
+	// 	{
+	// 		// url subscription address
+	// 		v1.GET("/{uid}/subscription/urls", middleware.TokenAuthMiddleware(), ctl.SubscribeDispathcer.ListSubscribeURL)
+	// 		v1.POST("/{uid}/subscription/url", middleware.TokenAuthMiddleware(), ctl.SubscribeDispathcer.AddSubscribeURL)
+	// 		v1.PUT("/{uid}/subscription/url/{uid}", middleware.TokenAuthMiddleware(), ctl.SubscribeDispathcer.UpdateSubscribeURL)
+	// 		v1.DELETE("/{uid}/subscription/url/{uid}", middleware.TokenAuthMiddleware(), ctl.SubscribeDispathcer.DeleteSubscribeURL)
+
+	// 		v1.GET("/{uid}/subscription/{addr}", middleware.TokenAuthMiddleware(), ctl.SubscribeDispathcer.SubscribeProxyProtocol)
+	// 	}
+	// }
+
 	// 非组
 	// view
 	engine.GET("/", ctl.ViewDispathcer.Redirect)

@@ -460,6 +460,16 @@ func parmasToJSON(c *gin.Context) (protocol string, id int, err error) {
 		if err != nil {
 			return
 		}
+	case "SOCKS":
+		err = ParseSocksOutbound(param)
+		if err != nil {
+			return
+		}
+	case "SHADOWSOCKS":
+		err = ParseShadowsocksOutbound(param)
+		if err != nil {
+			return
+		}
 	}
 
 	content, err = json.MarshalIndent(cnf, "", "	")

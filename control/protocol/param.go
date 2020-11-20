@@ -1,5 +1,13 @@
 package protocol
 
+// 协议名称
+const (
+	Vmess       = "VMESS"
+	Vless       = "VLESS"
+	Socks       = "SOCKS"
+	Shadowsocks = "SHADOWSOCKS"
+)
+
 // Content 协议参数
 type Content struct {
 	UID int `json:"uId"` // 登录用户的 id
@@ -21,6 +29,9 @@ type Content struct {
 	Encryption string `json:"encryption"`
 	Level      int    `json:"level"`    //  等级
 	Security   string `json:"security"` // 加密方式
+	// socks 协议参数
+	User   string `json:"user"`
+	Passwd string `json:"passwd"`
 
 	Network     string `json:"network"`     // 伪装网络协议类型
 	Domains     string `json:"domains"`     // 伪装域名

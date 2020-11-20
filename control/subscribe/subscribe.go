@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -178,7 +179,7 @@ func (Dispatcher) SubscribeProxyProtocol(c *gin.Context) {
 		return
 	}
 
-	vmesss, vlesss, err := subscribe(params.UID, params.URL)
+	vmesss, vlesss, sockss, sss, err := subscribe(params.UID, params.URL)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -192,16 +193,18 @@ func (Dispatcher) SubscribeProxyProtocol(c *gin.Context) {
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
 		Code: serve.StatusOK,
 		Data: map[string]interface{}{
-			"vmess": vmesss,
-			"vless": vlesss,
+			"vmess":       vmesss,
+			"vless":       vlesss,
+			"socks":       sockss,
+			"shadowsocks": sss,
 		},
 	})
 }
 
-func subscribe(uid int, url string) (vlesss []proxy.Vless, vmesss []proxy.Vmess, err error) {
+func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vmess, sockss []proxy.Socks, sss []proxy.Shadowsocks, err error) {
 	b := make([]byte, 10240)
 
-	resp, err := http.Get(url)
+	resp, err := http.Get(urlAddr)
 	if err != nil {
 		return
 	}
@@ -223,15 +226,47 @@ func subscribe(uid int, url string) (vlesss []proxy.Vless, vmesss []proxy.Vmess,
 	var port, aid, v int
 	var tls string
 	var ok bool
+	var name string // ss 和 socks 协议的分享格式
+	var userCnf, serverCnf []string
+
 	for _, protocol := range protocols {
 		content := strings.Split(protocol, "://")
 		if len(content) != 2 {
 			break
 		}
+		if strings.Contains(content[1], "#") {
+			rs := strings.Split(content[1], "#")
+			if len(rs) != 2 {
+				break
+			}
+			name, err = url.QueryUnescape(rs[1])
+			if err != nil {
+				break
+			}
+			data, err = base64.StdEncoding.DecodeString(rs[0])
+			if err != nil {
+				break
+			}
 
-		data, err = base64.StdEncoding.DecodeString(content[1])
-		if err != nil {
-			return
+			cnf := strings.Split(string(data), "@")
+			if len(cnf) != 2 {
+				break
+			}
+			userCnf = strings.Split(cnf[0], ":")
+			serverCnf = strings.Split(cnf[1], ":")
+			if len(userCnf) != 2 || len(serverCnf) != 2 {
+				break
+			}
+
+			port, err = strconv.Atoi(serverCnf[1])
+			if err != nil {
+				break
+			}
+		} else {
+			data, err = base64.StdEncoding.DecodeString(content[1])
+			if err != nil {
+				break
+			}
 		}
 
 		switch strings.ToUpper(content[0]) {
@@ -239,12 +274,12 @@ func subscribe(uid int, url string) (vlesss []proxy.Vless, vmesss []proxy.Vmess,
 			vms := vmess{}
 			err = json.Unmarshal(data, &vms)
 			if err != nil {
-				return
+				break
 			}
 
 			port, aid, v, tls, err = convert(vms)
 			if err != nil {
-				return
+				break
 			}
 
 			proVmess := proxy.Vmess{
@@ -265,7 +300,7 @@ func subscribe(uid int, url string) (vlesss []proxy.Vless, vmesss []proxy.Vmess,
 
 			ok, err = db.Engine().Get(&proVmess)
 			if err != nil {
-				return
+				break
 			}
 			if ok {
 				break
@@ -273,14 +308,14 @@ func subscribe(uid int, url string) (vlesss []proxy.Vless, vmesss []proxy.Vmess,
 
 			_, err = db.Engine().Insert(&proVmess)
 			if err != nil {
-				return
+				break
 			}
 			vmesss = append(vmesss, proVmess)
 		case "VLESS":
 			vls := vless{}
 			err = json.Unmarshal(data, &vls)
 			if err != nil {
-				return
+				break
 			}
 
 			proVless := proxy.Vless{
@@ -300,7 +335,7 @@ func subscribe(uid int, url string) (vlesss []proxy.Vless, vmesss []proxy.Vmess,
 
 			ok, err = db.Engine().Get(&proVless)
 			if err != nil {
-				return
+				break
 			}
 			if ok {
 				break
@@ -308,9 +343,57 @@ func subscribe(uid int, url string) (vlesss []proxy.Vless, vmesss []proxy.Vmess,
 
 			_, err = db.Engine().Insert(&proVless)
 			if err != nil {
-				return
+				break
 			}
 			vlesss = append(vlesss, proVless)
+		case "SOCKS":
+			socks := proxy.Socks{
+				UID:      uint64(uid),
+				Protocol: "socks",
+				Name:     name,
+				Address:  serverCnf[0],
+				Port:     port,
+				User:     userCnf[0],
+				Passwd:   userCnf[1],
+			}
+
+			ok, err = db.Engine().Get(&socks)
+			if err != nil {
+				return
+			}
+			if ok {
+				break
+			}
+
+			_, err = db.Engine().Insert(&socks)
+			if err != nil {
+				return
+			}
+			sockss = append(sockss, socks)
+		case "SS":
+			shadowsocks := proxy.Shadowsocks{
+				UID:      uint64(uid),
+				Protocol: "shadowsocks",
+				Name:     name,
+				Address:  serverCnf[0],
+				Port:     port,
+				Security: userCnf[0],
+				Passwd:   userCnf[1],
+			}
+
+			ok, err = db.Engine().Get(&shadowsocks)
+			if err != nil {
+				return
+			}
+			if ok {
+				break
+			}
+
+			_, err = db.Engine().Insert(&shadowsocks)
+			if err != nil {
+				return
+			}
+			sss = append(sss, shadowsocks)
 		}
 	}
 	return

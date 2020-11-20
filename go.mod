@@ -15,4 +15,4 @@ require (
 	v2ray.com/core v4.15.0+incompatible
 )
 
-replace v2ray.com/core => ../v2ray-core-4.29.0
+replace v2ray.com/core => ../v2ray-core-4.32.1

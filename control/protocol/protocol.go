@@ -2,9 +2,9 @@ package protocol
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 
 	"github.com/gopherty/v2rayW/db"
 	"github.com/gopherty/v2rayW/logger"
@@ -20,7 +20,7 @@ type Dispatcher struct {
 // ListProxyProtocols 获取用户所有的代理协议
 func (Dispatcher) ListProxyProtocols(c *gin.Context) {
 	var params map[string]interface{}
-	err := c.ShouldBindWith(&params, binding.Default(c.Request.Method, c.ContentType()))
+	err := c.ShouldBind(&params)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusUnprocessableEntity, model.BackToFrontEndData{
@@ -34,7 +34,7 @@ func (Dispatcher) ListProxyProtocols(c *gin.Context) {
 	engine := db.Engine()
 
 	var v2rays []proxy.Vmess
-	err = engine.Table("vmess").Where("user_id = ?", params["uid"]).Find(&v2rays)
+	err = engine.Where("user_id = ?", params["uid"]).Find(&v2rays)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -46,7 +46,31 @@ func (Dispatcher) ListProxyProtocols(c *gin.Context) {
 	}
 
 	var vless []proxy.Vless
-	err = engine.Table("vless").Where("user_id = ?", params["uid"]).Find(&vless)
+	err = engine.Where("user_id = ?", params["uid"]).Find(&vless)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusDBError,
+			Description: "数据库错误",
+			Error:       err.Error(),
+		})
+		return
+	}
+
+	var socks []proxy.Socks
+	err = engine.Where("user_id = ?", params["uid"]).Find(&socks)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusDBError,
+			Description: "数据库错误",
+			Error:       err.Error(),
+		})
+		return
+	}
+
+	var shadowsocks []proxy.Shadowsocks
+	err = engine.Where("user_id = ?", params["uid"]).Find(&shadowsocks)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -58,10 +82,13 @@ func (Dispatcher) ListProxyProtocols(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
-		Code: serve.StatusOK,
+		Code:        serve.StatusOK,
+		Description: "获取成功",
 		Data: map[string]interface{}{
-			"vmess": v2rays,
-			"vless": vless,
+			"vmess":       v2rays,
+			"vless":       vless,
+			"socks":       socks,
+			"shadowsocks": shadowsocks,
 		},
 	})
 }
@@ -70,7 +97,7 @@ func (Dispatcher) ListProxyProtocols(c *gin.Context) {
 func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 	// 获取 json 对象与后端数据结构绑定
 	var params Content
-	err := c.ShouldBindWith(&params, binding.Default(c.Request.Method, c.ContentType()))
+	err := c.ShouldBind(&params)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusUnprocessableEntity, model.BackToFrontEndData{
@@ -84,9 +111,9 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 	// 获取数据库对象
 	engine := db.Engine()
 	var id uint64
-	switch params.Protocol {
-	case "vmess":
-		v2ray := &proxy.Vmess{
+	switch strings.ToUpper(params.Protocol) {
+	case Vmess:
+		vmess := &proxy.Vmess{
 			UID:         uint64(params.UID),
 			Name:        params.Name,
 			Protocol:    params.Protocol,
@@ -102,7 +129,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 			Domains:     params.Domains,
 			Direct:      params.Direct,
 		}
-		_, err = engine.Table(v2ray.TableName()).Insert(v2ray)
+		_, err = engine.Insert(vmess)
 		if err != nil {
 			logger.Logger().Error(err.Error())
 			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -112,8 +139,8 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 			})
 			return
 		}
-		id = v2ray.ID
-	case "vless":
+		id = vmess.ID
+	case Vless:
 		vless := &proxy.Vless{
 			UID:         uint64(params.UID),
 			Name:        params.Name,
@@ -130,7 +157,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 			Domains:     params.Domains,
 			Direct:      params.Direct,
 		}
-		_, err = engine.Table(vless.TableName()).Insert(vless)
+		_, err = engine.Insert(vless)
 		if err != nil {
 			logger.Logger().Error(err.Error())
 			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -141,6 +168,49 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 			return
 		}
 		id = vless.ID
+	case Socks:
+		socks := &proxy.Socks{
+			UID:      uint64(params.UID),
+			Name:     params.Name,
+			Protocol: params.Protocol,
+			Address:  params.Address,
+			Port:     params.Port,
+			User:     params.User,
+			Passwd:   params.Passwd,
+		}
+		_, err = engine.Insert(socks)
+		if err != nil {
+			logger.Logger().Error(err.Error())
+			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+				Code:        serve.StatusDBError,
+				Description: "数据库错误",
+				Error:       err.Error(),
+			})
+			return
+		}
+		id = socks.ID
+	case Shadowsocks:
+		shadowsocks := &proxy.Shadowsocks{
+			UID:      uint64(params.UID),
+			Name:     params.Name,
+			Protocol: params.Protocol,
+			Address:  params.Address,
+			Port:     params.Port,
+			Passwd:   params.Passwd,
+			Security: params.Security,
+			Direct:   params.Direct,
+		}
+		_, err = engine.Insert(shadowsocks)
+		if err != nil {
+			logger.Logger().Error(err.Error())
+			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+				Code:        serve.StatusDBError,
+				Description: "数据库错误",
+				Error:       err.Error(),
+			})
+			return
+		}
+		id = shadowsocks.ID
 	default:
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
 			Code:  serve.StatusServerError,
@@ -150,10 +220,10 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
-		Code: serve.StatusOK,
+		Code:        serve.StatusOK,
+		Description: "增加成功",
 		Data: map[string]interface{}{
-			"msg": "增加成功",
-			"id":  id,
+			"id": id,
 		},
 	})
 }
@@ -161,7 +231,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 // DeleteProxyProtocol 删除代理协议
 func (Dispatcher) DeleteProxyProtocol(c *gin.Context) {
 	var params DeleteParams
-	err := c.ShouldBindWith(&params, binding.Default(c.Request.Method, c.ContentType()))
+	err := c.ShouldBind(&params)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusUnprocessableEntity, model.BackToFrontEndData{
@@ -174,15 +244,25 @@ func (Dispatcher) DeleteProxyProtocol(c *gin.Context) {
 
 	var protocolName string
 	var bean interface{}
-	switch params.ProtocolName {
-	case "vmess":
+	switch strings.ToUpper(params.ProtocolName) {
+	case Vmess:
 		protocolName = "vmess"
 		bean = proxy.Vmess{
 			ID: uint64(params.ProtocolID),
 		}
-	case "vless":
+	case Vless:
 		protocolName = "vless"
 		bean = proxy.Vless{
+			ID: uint64(params.ProtocolID),
+		}
+	case Socks:
+		protocolName = "socks"
+		bean = proxy.Socks{
+			ID: uint64(params.ProtocolID),
+		}
+	case Shadowsocks:
+		protocolName = "shadowsocks"
+		bean = proxy.Shadowsocks{
 			ID: uint64(params.ProtocolID),
 		}
 	default:
@@ -197,7 +277,7 @@ func (Dispatcher) DeleteProxyProtocol(c *gin.Context) {
 	}
 
 	engine := db.Engine()
-	_, err = engine.Table(protocolName).Delete(bean)
+	_, err = engine.Delete(bean)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -209,17 +289,15 @@ func (Dispatcher) DeleteProxyProtocol(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
-		Code: serve.StatusOK,
-		Data: map[string]interface{}{
-			"msg": "删除成功",
-		},
+		Code:        serve.StatusOK,
+		Description: "删除成功",
 	})
 }
 
 // UpdateProxyProtocol 修改代理协议
 func (Dispatcher) UpdateProxyProtocol(c *gin.Context) {
 	var params Content
-	err := c.ShouldBindWith(&params, binding.Default(c.Request.Method, c.ContentType()))
+	err := c.ShouldBind(&params)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusUnprocessableEntity, model.BackToFrontEndData{
@@ -231,8 +309,8 @@ func (Dispatcher) UpdateProxyProtocol(c *gin.Context) {
 	}
 
 	engine := db.Engine()
-	switch params.Protocol {
-	case "vmess":
+	switch strings.ToUpper(params.Protocol) {
+	case Vmess:
 		v2ray := &proxy.Vmess{
 			UID:         uint64(params.UID),
 			Name:        params.Name,
@@ -249,7 +327,7 @@ func (Dispatcher) UpdateProxyProtocol(c *gin.Context) {
 			Domains:     params.Domains,
 			Direct:      params.Direct,
 		}
-		_, err := engine.Table(v2ray.TableName()).AllCols().Where(" id = ?", params.ID).Update(v2ray)
+		_, err := engine.AllCols().Where(" id = ?", params.ID).Update(v2ray)
 		if err != nil {
 			logger.Logger().Error(err.Error())
 			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -259,7 +337,7 @@ func (Dispatcher) UpdateProxyProtocol(c *gin.Context) {
 			})
 			return
 		}
-	case "vless":
+	case Vless:
 		vless := &proxy.Vless{
 			UID:         uint64(params.UID),
 			Name:        params.Name,
@@ -276,7 +354,48 @@ func (Dispatcher) UpdateProxyProtocol(c *gin.Context) {
 			Domains:     params.Domains,
 			Direct:      params.Direct,
 		}
-		_, err := engine.Table(vless.TableName()).AllCols().Where(" id = ?", params.ID).Update(vless)
+		_, err := engine.AllCols().Where(" id = ?", params.ID).Update(vless)
+		if err != nil {
+			logger.Logger().Error(err.Error())
+			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+				Code:        serve.StatusDBError,
+				Description: "数据库错误",
+				Error:       err.Error(),
+			})
+			return
+		}
+	case Socks:
+		socks := &proxy.Socks{
+			UID:      uint64(params.UID),
+			Name:     params.Name,
+			Protocol: params.Protocol,
+			Address:  params.Address,
+			Port:     params.Port,
+			User:     params.User,
+			Passwd:   params.Passwd,
+		}
+		_, err := engine.AllCols().Where(" id = ?", params.ID).Update(socks)
+		if err != nil {
+			logger.Logger().Error(err.Error())
+			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+				Code:        serve.StatusDBError,
+				Description: "数据库错误",
+				Error:       err.Error(),
+			})
+			return
+		}
+	case Shadowsocks:
+		shadowsocks := &proxy.Shadowsocks{
+			UID:      uint64(params.UID),
+			Name:     params.Name,
+			Protocol: params.Protocol,
+			Address:  params.Address,
+			Port:     params.Port,
+			Passwd:   params.Passwd,
+			Security: params.Security,
+			Direct:   params.Direct,
+		}
+		_, err := engine.AllCols().Where(" id = ?", params.ID).Update(shadowsocks)
 		if err != nil {
 			logger.Logger().Error(err.Error())
 			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -295,10 +414,8 @@ func (Dispatcher) UpdateProxyProtocol(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
-		Code: serve.StatusOK,
-		Data: map[string]interface{}{
-			"msg": "修改成功",
-		},
+		Code:        serve.StatusOK,
+		Description: "修改成功",
 	})
 }
 
@@ -341,4 +458,6 @@ func (Dispatcher) ClearProxyProtocol(c *gin.Context) {
 
 	_, err = session.Delete(&proxy.Vless{UID: uint64(params.UID)})
 	_, err = session.Delete(&proxy.Vmess{UID: uint64(params.UID)})
+	_, err = session.Delete(&proxy.Socks{UID: uint64(params.UID)})
+	_, err = session.Delete(&proxy.Shadowsocks{UID: uint64(params.UID)})
 }

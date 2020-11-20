@@ -80,6 +80,28 @@ func (Register) Regist() {
 			logger.Logger().Fatal(err.Error())
 		}
 	}
+	// socks 表
+	exists, err = db.IsTableExist(&proxy.Socks{})
+	if err != nil {
+		logger.Logger().Fatal(err.Error())
+	}
+	if !exists {
+		err = db.CreateTables(&proxy.Socks{})
+		if err != nil {
+			logger.Logger().Fatal(err.Error())
+		}
+	}
+	// shadowsocks 表
+	exists, err = db.IsTableExist(&proxy.Shadowsocks{})
+	if err != nil {
+		logger.Logger().Fatal(err.Error())
+	}
+	if !exists {
+		err = db.CreateTables(&proxy.Shadowsocks{})
+		if err != nil {
+			logger.Logger().Fatal(err.Error())
+		}
+	}
 	// 订阅地址表
 	exists, err = db.IsTableExist(&proxy.Subscribe{})
 	if err != nil {
@@ -91,7 +113,7 @@ func (Register) Regist() {
 			logger.Logger().Fatal(err.Error())
 		}
 	}
-	db.Sync2(&proxy.Vmess{}, &proxy.Vless{}, &proxy.Subscribe{})
+	db.Sync2(&proxy.Vmess{}, &proxy.Vless{}, &proxy.Socks{}, &proxy.Shadowsocks{}, &proxy.Subscribe{})
 
 	// 是否关闭用户管理
 	if cnf.DB.UserManageDisable {
