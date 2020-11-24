@@ -15,6 +15,12 @@ type Socks struct {
 	// 用户配置
 	User   string `xorm:"'user'"`
 	Passwd string `xorm:"'passwd'"`
+
+	// 完整配置文件
+	ConfigFile string `xorm:"'cnf' notnull"`
+
+	// 国内直连
+	Direct bool `xorm:"direct default('false')"`
 }
 
 // TableName 表名

@@ -1,6 +1,6 @@
 module github.com/gopherty/v2rayW
 
-go 1.12
+go 1.15
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -15,4 +15,4 @@ require (
 	v2ray.com/core v4.15.0+incompatible
 )
 
-replace v2ray.com/core => ../v2ray-core-4.32.1
+replace v2ray.com/core => ../v2ray-core-4.33.0

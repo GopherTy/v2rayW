@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	ptl "github.com/gopherty/v2rayW/control/protocol"
 	"github.com/gopherty/v2rayW/db"
 	"github.com/gopherty/v2rayW/logger"
 	"github.com/gopherty/v2rayW/model"
@@ -223,6 +224,7 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 
 	protocols := strings.Split(string(strs), "\n")
 	var data []byte
+	var jsonData []byte
 	var port, aid, v int
 	var tls string
 	var ok bool
@@ -282,6 +284,25 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 				break
 			}
 
+			jsonData, err = ptl.ParseToData(ptl.Parameter{
+				UID:         uid,
+				Protocol:    "vmess",
+				Name:        vms.Ps,
+				Address:     vms.Add,
+				Port:        port,
+				UserID:      vms.ID,
+				AlertID:     aid,
+				Security:    vms.Type,
+				Level:       v,
+				Network:     vms.Net,
+				NetSecurity: tls,
+				Path:        vms.Path,
+				Domains:     vms.Host,
+			})
+			if err != nil {
+				break
+			}
+
 			proVmess := proxy.Vmess{
 				UID:         uint64(uid),
 				Protocol:    "vmess",
@@ -296,6 +317,7 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 				NetSecurity: tls,
 				Path:        vms.Path,
 				Domains:     vms.Host,
+				ConfigFile:  string(jsonData),
 			}
 
 			ok, err = db.Engine().Get(&proVmess)
@@ -318,19 +340,38 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 				break
 			}
 
-			proVless := proxy.Vless{
-				UID:         uint64(uid),
+			jsonData, err = ptl.ParseToData(ptl.Parameter{
+				UID:         uid,
 				Protocol:    "vless",
 				Name:        vls.Ps,
 				Address:     vls.Add,
-				Port:        vls.Port,
+				Port:        port,
 				UserID:      vls.ID,
-				Flow:        vls.Flow,
+				AlertID:     aid,
 				Encryption:  vls.Encry,
 				Level:       vls.V,
 				Network:     vls.Net,
 				NetSecurity: vls.Sec,
 				Path:        vls.Path,
+			})
+			if err != nil {
+				break
+			}
+
+			proVless := proxy.Vless{
+				UID:      uint64(uid),
+				Protocol: "vless",
+				Name:     vls.Ps,
+				Address:  vls.Add,
+				Port:     vls.Port,
+				UserID:   vls.ID,
+				// Flow:        vls.Flow,
+				Encryption:  vls.Encry,
+				Level:       vls.V,
+				Network:     vls.Net,
+				NetSecurity: vls.Sec,
+				Path:        vls.Path,
+				ConfigFile:  string(jsonData),
 			}
 
 			ok, err = db.Engine().Get(&proVless)
@@ -347,14 +388,28 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 			}
 			vlesss = append(vlesss, proVless)
 		case "SOCKS":
-			socks := proxy.Socks{
-				UID:      uint64(uid),
+			jsonData, err = ptl.ParseToData(ptl.Parameter{
+				UID:      uid,
 				Protocol: "socks",
 				Name:     name,
 				Address:  serverCnf[0],
 				Port:     port,
 				User:     userCnf[0],
 				Passwd:   userCnf[1],
+			})
+			if err != nil {
+				break
+			}
+
+			socks := proxy.Socks{
+				UID:        uint64(uid),
+				Protocol:   "socks",
+				Name:       name,
+				Address:    serverCnf[0],
+				Port:       port,
+				User:       userCnf[0],
+				Passwd:     userCnf[1],
+				ConfigFile: string(jsonData),
 			}
 
 			ok, err = db.Engine().Get(&socks)
@@ -371,14 +426,29 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 			}
 			sockss = append(sockss, socks)
 		case "SS":
-			shadowsocks := proxy.Shadowsocks{
-				UID:      uint64(uid),
+			var jsonData []byte
+			jsonData, err = ptl.ParseToData(ptl.Parameter{
+				UID:      uid,
 				Protocol: "shadowsocks",
 				Name:     name,
 				Address:  serverCnf[0],
 				Port:     port,
 				Security: userCnf[0],
 				Passwd:   userCnf[1],
+			})
+			if err != nil {
+				break
+			}
+
+			shadowsocks := proxy.Shadowsocks{
+				UID:        uint64(uid),
+				Protocol:   "shadowsocks",
+				Name:       name,
+				Address:    serverCnf[0],
+				Port:       port,
+				Security:   userCnf[0],
+				Passwd:     userCnf[1],
+				ConfigFile: string(jsonData),
 			}
 
 			ok, err = db.Engine().Get(&shadowsocks)

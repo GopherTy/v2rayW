@@ -1,7 +1,7 @@
 package v2ray
 
 // ParseVmessOutbound 解析 vmess 协议
-func ParseVmessOutbound(param ProtocolParam) (err error) {
+func ParseVmessOutbound(param ProtocolParam, config ...interface{}) (err error) {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -44,12 +44,20 @@ func ParseVmessOutbound(param ProtocolParam) (err error) {
 		}
 	}
 
-	cnf.Outbounds[0] = vmess
+	// 适配增加全部配置字段接口
+	if len(config) == 1 {
+		if c, ok := config[0].(*BaseCnf); ok {
+			c.Outbounds[0] = vmess
+		}
+	} else {
+		cnf.Outbounds[0] = vmess
+	}
+
 	return
 }
 
 // ParseVlessOutbound 解析 vless 协议
-func ParseVlessOutbound(param ProtocolParam) (err error) {
+func ParseVlessOutbound(param ProtocolParam, config ...interface{}) (err error) {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -63,8 +71,8 @@ func ParseVlessOutbound(param ProtocolParam) (err error) {
 					"port":    param.Port,
 					"users": []map[string]interface{}{
 						{
-							"id":         param.UserID,
-							"flow":       param.Flow,
+							"id": param.UserID,
+							// "flow":       param.Flow,
 							"encryption": param.Encryption,
 							"level":      param.Level,
 						},
@@ -98,12 +106,19 @@ func ParseVlessOutbound(param ProtocolParam) (err error) {
 		}
 	}
 
-	cnf.Outbounds[0] = vless
+	// 适配增加全部配置字段接口
+	if len(config) == 1 {
+		if c, ok := config[0].(*BaseCnf); ok {
+			c.Outbounds[0] = vless
+		}
+	} else {
+		cnf.Outbounds[0] = vless
+	}
 	return
 }
 
 // ParseSocksOutbound 解析 socks 协议
-func ParseSocksOutbound(param ProtocolParam) (err error) {
+func ParseSocksOutbound(param ProtocolParam, config ...interface{}) (err error) {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -126,12 +141,19 @@ func ParseSocksOutbound(param ProtocolParam) (err error) {
 		},
 	}
 
-	cnf.Outbounds[0] = socks
+	// 适配增加全部配置字段接口
+	if len(config) == 1 {
+		if c, ok := config[0].(*BaseCnf); ok {
+			c.Outbounds[0] = socks
+		}
+	} else {
+		cnf.Outbounds[0] = socks
+	}
 	return
 }
 
 // ParseShadowsocksOutbound 解析 shadowsocks 协议
-func ParseShadowsocksOutbound(param ProtocolParam) (err error) {
+func ParseShadowsocksOutbound(param ProtocolParam, config ...interface{}) (err error) {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -154,6 +176,13 @@ func ParseShadowsocksOutbound(param ProtocolParam) (err error) {
 		},
 	}
 
-	cnf.Outbounds[0] = shadowsocks
+	// 适配增加全部配置字段接口
+	if len(config) == 1 {
+		if c, ok := config[0].(*BaseCnf); ok {
+			c.Outbounds[0] = shadowsocks
+		}
+	} else {
+		cnf.Outbounds[0] = shadowsocks
+	}
 	return
 }

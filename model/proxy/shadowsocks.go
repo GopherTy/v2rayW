@@ -14,7 +14,10 @@ type Shadowsocks struct {
 
 	// 用户配置
 	Passwd   string `xorm:"'passwd'"`
-	Security string `xorm:"securtiy"`
+	Security string `xorm:"security"`
+
+	// 完整配置文件
+	ConfigFile string `xorm:"'cnf' notnull"`
 
 	// 国内直连
 	Direct bool `xorm:"direct default('false')"`

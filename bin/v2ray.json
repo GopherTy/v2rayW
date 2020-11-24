@@ -1,32 +1,32 @@
 {
-	"log": {
-		"access": "",
-		"error": "",
-		"loglevel": "warning"
-	},
-	"api": null,
-	"dns": {},
-	"routing": {},
-	"policy": {},
-	"inbounds": [
-		{
-			"listen": "127.0.0.1",
-			"port": 1080,
-			"protocol": "socks",
-			"settings": {
-				"auth": "noauth"
-			},
-			"sniffing": {
-				"destOverride": [
-					"http",
-					"tls"
-				],
-				"enabled": true
-			}
-		}
-	],
-	"outbounds": [],
-	"transport": {},
-	"stats": {},
-	"reverse": {}
+    "log": {
+        "access": "",
+        "error": "",
+        "loglevel": "warning"
+    },
+    "api": null,
+    "dns": {},
+    "routing": {},
+    "policy": {},
+    "inbounds": [
+        {
+            "listen": "127.0.0.1",
+            "port": 1080,
+            "protocol": "socks",
+            "settings": {
+                "auth": "noauth"
+            },
+            "sniffing": {
+                "destOverride": [
+                    "http",
+                    "tls"
+                ],
+                "enabled": true
+            }
+        }
+    ],
+    "outbounds": [],
+    "transport": {},
+    "stats": {},
+    "reverse": {}
 }

@@ -13,24 +13,27 @@ type Vless struct {
 	Port     int    `xorm:"'port' INT"`
 
 	// settings vnext  users
-	UserID     string `xorm:"userId"`
-	Flow       string `xorm:"'flow'"`
+	UserID string `xorm:"userId"`
+	// Flow       string `xorm:"'flow'"`
 	Encryption string `xorm:"encryption default('none')"`
 	Level      int    `xorm:"level"`
-	Email      string `xorm:"email"`
-	Decryption string `xorm:"decryption default('none')"`
+	// Email      string `xorm:"email"`
+	// Decryption string `xorm:"decryption default('none')"`
 
 	// fallback
-	Alpn         string `xorm:"alpn"`
-	FallbackPath string `xorm:"fallback_path"`
-	Dest         string `xorm:"dest default('none')"`
-	Xver         int    `xorm:"xver"`
+	// Alpn         string `xorm:"alpn"`
+	// FallbackPath string `xorm:"fallback_path"`
+	// Dest         string `xorm:"dest default('none')"`
+	// Xver         int    `xorm:"xver"`
 
 	// streamSettings
 	Network     string `xorm:"network"`
 	NetSecurity string `xorm:"net_security"`
 	Path        string `xorm:"path"`
 	Domains     string `xorm:"domains"`
+
+	// 完整配置文件
+	ConfigFile string `xorm:"'cnf' notnull"`
 
 	// 国内直连
 	Direct bool `xorm:"direct default('false')"`

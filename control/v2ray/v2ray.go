@@ -64,8 +64,33 @@ func (Dispatcher) Start(c *gin.Context) {
 		}
 	}()
 
-	// 将前端传过来的参数解析成 JSON 格式写入到文件中。
-	protocol, id, err := parmasToJSON(c)
+	var params ProtocolParam
+	err = c.ShouldBind(&params)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusParamNotMatched,
+			Description: "解析参数错误",
+			Error:       err.Error(),
+		})
+		return
+	}
+	protocol := params.Protocol
+	id := params.ID
+
+	path := utils.BasePath() + "/v2ray.json"
+	content := []byte(params.ConfigFile)
+	err = json.Unmarshal(content, cnf)
+	if err != nil {
+		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusParamNotMatched,
+			Description: "解析参数错误",
+			Error:       err.Error(),
+		})
+		return
+	}
+	err = ioutil.WriteFile(path, content, os.ModePerm)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -76,8 +101,20 @@ func (Dispatcher) Start(c *gin.Context) {
 		return
 	}
 
+	// 将前端传过来的参数解析成 JSON 格式写入到文件中。
+	// protocol, id, err := parmasToJSON(c)
+	// if err != nil {
+	// 	logger.Logger().Error(err.Error())
+	// 	c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+	// 		Code:        serve.StatusParamNotMatched,
+	// 		Description: "解析参数错误",
+	// 		Error:       err.Error(),
+	// 	})
+	// 	return
+	// }
+
 	// 暂定 v2ray 配置文件名称和位置硬编码，因为是通过 web-ui 来对配置文件进行操作。
-	path := utils.BasePath() + "/v2ray.json"
+	// path := utils.BasePath() + "/v2ray.json"
 	file, err := os.Open(path)
 	if err != nil {
 		logger.Logger().Error(err.Error())
@@ -353,6 +390,7 @@ func (Dispatcher) Settings(c *gin.Context) {
 
 	path := utils.BasePath() + "/v2ray.json"
 	mu.Lock()
+	defer mu.Unlock()
 	cnf.Inbounds[0]["listen"] = param.Address
 	cnf.Inbounds[0]["port"] = param.Port
 	cnf.Inbounds[0]["protocol"] = param.Protocol
@@ -377,7 +415,6 @@ func (Dispatcher) Settings(c *gin.Context) {
 		})
 		return
 	}
-	mu.Unlock()
 
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
 		Code: serve.StatusOK,

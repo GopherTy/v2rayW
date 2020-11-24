@@ -8,8 +8,8 @@ const (
 	Shadowsocks = "SHADOWSOCKS"
 )
 
-// Content 协议参数
-type Content struct {
+// Parameter 协议参数
+type Parameter struct {
 	UID int `json:"uId"` // 登录用户的 id
 
 	ID       int    `json:"id"`       // 协议 id
@@ -37,6 +37,11 @@ type Content struct {
 	Domains     string `json:"domains"`     // 伪装域名
 	Path        string `json:"path"`        // 路径
 	NetSecurity string `json:"netSecurity"` // 伪装网络协议的加密方式
+
+	// 用于区分是配置文件修改还是输入框修改
+	Custom bool `json:"custom"`
+	// 配置字符串
+	ConfigFile string `json:"configFile"`
 
 	// 国内直连
 	Direct bool `json:"direct"`

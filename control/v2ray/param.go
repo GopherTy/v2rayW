@@ -25,6 +25,8 @@ type ProtocolParam struct {
 	Path        string `json:"path"`
 	NetSecurity string
 
+	ConfigFile string
+
 	// 国内直连
 	Direct bool `json:"direct"`
 }
