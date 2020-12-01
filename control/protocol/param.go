@@ -38,7 +38,7 @@ type Parameter struct {
 	Path        string `json:"path"`        // 路径
 	NetSecurity string `json:"netSecurity"` // 伪装网络协议的加密方式
 
-	// 用于区分是配置文件修改还是输入框修改
+	// 用于区分是配置文件导入
 	Custom bool `json:"custom"`
 	// 配置字符串
 	ConfigFile string `json:"configFile"`

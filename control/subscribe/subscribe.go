@@ -180,7 +180,7 @@ func (Dispatcher) SubscribeProxyProtocol(c *gin.Context) {
 		return
 	}
 
-	vmesss, vlesss, sockss, sss, err := subscribe(params.UID, params.URL)
+	vlesss, vmesss, sockss, sss, err := subscribe(params.UID, params.URL)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{

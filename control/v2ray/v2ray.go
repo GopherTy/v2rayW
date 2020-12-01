@@ -101,20 +101,6 @@ func (Dispatcher) Start(c *gin.Context) {
 		return
 	}
 
-	// 将前端传过来的参数解析成 JSON 格式写入到文件中。
-	// protocol, id, err := parmasToJSON(c)
-	// if err != nil {
-	// 	logger.Logger().Error(err.Error())
-	// 	c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
-	// 		Code:        serve.StatusParamNotMatched,
-	// 		Description: "解析参数错误",
-	// 		Error:       err.Error(),
-	// 	})
-	// 	return
-	// }
-
-	// 暂定 v2ray 配置文件名称和位置硬编码，因为是通过 web-ui 来对配置文件进行操作。
-	// path := utils.BasePath() + "/v2ray.json"
 	file, err := os.Open(path)
 	if err != nil {
 		logger.Logger().Error(err.Error())

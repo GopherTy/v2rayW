@@ -112,16 +112,49 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 		})
 		return
 	}
+	var v2rayCnf []byte
+	if params.Custom {
+		cnf := v2ray.NewConfig()
+		err := json.Unmarshal([]byte(params.ConfigFile), cnf)
+		if err != nil {
+			logger.Logger().Error(err.Error())
+			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+				Code:        serve.StatusServerError,
+				Description: "解析配置文件错误",
+				Error:       err.Error(),
+			})
+			return
+		}
 
-	content, err := ParseToData(params)
-	if err != nil {
-		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
-			Code:        serve.StatusServerError,
-			Description: "解析配置文件错误",
-			Error:       err.Error(),
-		})
-		return
+		// 不允许改变日志输出
+		cnf.Log = map[string]interface{}{
+			"access":   "",
+			"error":    "",
+			"loglevel": "warning",
+		}
+		data, err := json.MarshalIndent(cnf, "", "    ")
+		if err != nil {
+			logger.Logger().Error(err.Error())
+			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+				Code:        serve.StatusServerError,
+				Description: "解析配置文件错误",
+				Error:       err.Error(),
+			})
+			return
+		}
+		v2rayCnf = data
+	} else {
+		content, err := ParseToData(params)
+		if err != nil {
+			logger.Logger().Error(err.Error())
+			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+				Code:        serve.StatusServerError,
+				Description: "解析配置文件错误",
+				Error:       err.Error(),
+			})
+			return
+		}
+		v2rayCnf = content
 	}
 
 	// 获取数据库对象
@@ -144,7 +177,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 			Path:        params.Path,
 			Domains:     params.Domains,
 			Direct:      params.Direct,
-			ConfigFile:  string(content),
+			ConfigFile:  string(v2rayCnf),
 		}
 		_, err = engine.Insert(vmess)
 		if err != nil {
@@ -173,7 +206,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 			Path:        params.Path,
 			Domains:     params.Domains,
 			Direct:      params.Direct,
-			ConfigFile:  string(content),
+			ConfigFile:  string(v2rayCnf),
 		}
 		_, err = engine.Insert(vless)
 		if err != nil {
@@ -196,7 +229,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 			User:       params.User,
 			Passwd:     params.Passwd,
 			Direct:     params.Direct,
-			ConfigFile: string(content),
+			ConfigFile: string(v2rayCnf),
 		}
 		_, err = engine.Insert(socks)
 		if err != nil {
@@ -219,7 +252,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 			Passwd:     params.Passwd,
 			Security:   params.Security,
 			Direct:     params.Direct,
-			ConfigFile: string(content),
+			ConfigFile: string(v2rayCnf),
 		}
 		_, err = engine.Insert(shadowsocks)
 		if err != nil {
@@ -245,7 +278,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 		Description: "增加成功",
 		Data: map[string]interface{}{
 			"id":  id,
-			"cnf": string(content),
+			"cnf": string(v2rayCnf),
 		},
 	})
 }
@@ -499,6 +532,7 @@ func (Dispatcher) ClearProxyProtocol(c *gin.Context) {
 			})
 		} else {
 			session.Commit()
+			db.Engine().ClearCache(&proxy.Vless{}, &proxy.Vmess{}, &proxy.Socks{}, &proxy.Shadowsocks{})
 			c.JSON(http.StatusOK, model.BackToFrontEndData{
 				Code:        serve.StatusOK,
 				Description: "清空成功",
@@ -511,158 +545,6 @@ func (Dispatcher) ClearProxyProtocol(c *gin.Context) {
 	_, err = session.Delete(&proxy.Socks{UID: uint64(params.UID)})
 	_, err = session.Delete(&proxy.Shadowsocks{UID: uint64(params.UID)})
 }
-
-// LoadCnfProxyProtocol 加载完整配置文件
-// func (Dispatcher) LoadCnfProxyProtocol(c *gin.Context) {
-// 	// 获取 json 对象与后端数据结构绑定
-// 	var params Parameter
-// 	err := c.ShouldBind(&params)
-// 	if err != nil {
-// 		logger.Logger().Error(err.Error())
-// 		c.JSON(http.StatusUnprocessableEntity, model.BackToFrontEndData{
-// 			Code:        serve.StatusParamNotMatched,
-// 			Description: "前端请求参数和后端绑定参数不匹配",
-// 			Error:       err.Error(),
-// 		})
-// 		return
-// 	}
-
-// 	cnf := v2ray.NewConfig()
-// 	err = json.Unmarshal([]byte(params.ConfigFile), cnf)
-// 	if err != nil {
-// 		logger.Logger().Error(err.Error())
-// 		c.JSON(http.StatusUnprocessableEntity, model.BackToFrontEndData{
-// 			Code:        serve.StatusInternalServerError,
-// 			Description: "配置文件有误",
-// 			Error:       err.Error(),
-// 		})
-// 		return
-// 	}
-
-// 	engine := db.Engine()
-// 	var id uint64
-// 	switch strings.ToUpper(params.Protocol) {
-// 	case Vmess:
-// 		vmess := &proxy.Vmess{
-// 			UID:         uint64(params.UID),
-// 			Name:        params.Name,
-// 			Protocol:    params.Protocol,
-// 			Address:     params.Address,
-// 			Port:        params.Port,
-// 			UserID:      params.UserID,
-// 			AlertID:     params.AlertID,
-// 			Security:    params.Security,
-// 			Level:       params.Level,
-// 			Network:     params.Network,
-// 			NetSecurity: params.NetSecurity,
-// 			Path:        params.Path,
-// 			Domains:     params.Domains,
-// 			Direct:      params.Direct,
-// 			ConfigFile:  string(content),
-// 		}
-// 		_, err = engine.Insert(vmess)
-// 		if err != nil {
-// 			logger.Logger().Error(err.Error())
-// 			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
-// 				Code:        serve.StatusDBError,
-// 				Description: "数据库错误",
-// 				Error:       err.Error(),
-// 			})
-// 			return
-// 		}
-// 		id = vmess.ID
-// 	case Vless:
-// 		vless := &proxy.Vless{
-// 			UID:      uint64(params.UID),
-// 			Name:     params.Name,
-// 			Protocol: params.Protocol,
-// 			Address:  params.Address,
-// 			Port:     params.Port,
-// 			UserID:   params.UserID,
-// 			// Flow:        params.Flow,
-// 			Encryption:  params.Encryption,
-// 			Level:       params.Level,
-// 			Network:     params.Network,
-// 			NetSecurity: params.NetSecurity,
-// 			Path:        params.Path,
-// 			Domains:     params.Domains,
-// 			Direct:      params.Direct,
-// 			ConfigFile:  string(content),
-// 		}
-// 		_, err = engine.Insert(vless)
-// 		if err != nil {
-// 			logger.Logger().Error(err.Error())
-// 			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
-// 				Code:        serve.StatusDBError,
-// 				Description: "数据库错误",
-// 				Error:       err.Error(),
-// 			})
-// 			return
-// 		}
-// 		id = vless.ID
-// 	case Socks:
-// 		socks := &proxy.Socks{
-// 			UID:        uint64(params.UID),
-// 			Name:       params.Name,
-// 			Protocol:   params.Protocol,
-// 			Address:    params.Address,
-// 			Port:       params.Port,
-// 			User:       params.User,
-// 			Passwd:     params.Passwd,
-// 			Direct:     params.Direct,
-// 			ConfigFile: string(content),
-// 		}
-// 		_, err = engine.Insert(socks)
-// 		if err != nil {
-// 			logger.Logger().Error(err.Error())
-// 			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
-// 				Code:        serve.StatusDBError,
-// 				Description: "数据库错误",
-// 				Error:       err.Error(),
-// 			})
-// 			return
-// 		}
-// 		id = socks.ID
-// 	case Shadowsocks:
-// 		shadowsocks := &proxy.Shadowsocks{
-// 			UID:        uint64(params.UID),
-// 			Name:       params.Name,
-// 			Protocol:   params.Protocol,
-// 			Address:    params.Address,
-// 			Port:       params.Port,
-// 			Passwd:     params.Passwd,
-// 			Security:   params.Security,
-// 			Direct:     params.Direct,
-// 			ConfigFile: string(content),
-// 		}
-// 		_, err = engine.Insert(shadowsocks)
-// 		if err != nil {
-// 			logger.Logger().Error(err.Error())
-// 			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
-// 				Code:        serve.StatusDBError,
-// 				Description: "数据库错误",
-// 				Error:       err.Error(),
-// 			})
-// 			return
-// 		}
-// 		id = shadowsocks.ID
-// 	default:
-// 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
-// 			Code:  serve.StatusServerError,
-// 			Error: "不支持该协议",
-// 		})
-// 		return
-// 	}
-
-// 	c.JSON(http.StatusOK, model.BackToFrontEndData{
-// 		Code:        serve.StatusOK,
-// 		Description: "增加成功",
-// 		Data: map[string]interface{}{
-// 			"id":  id,
-// 			"cnf": string(content),
-// 		},
-// 	})
-// }
 
 // ParseToData .
 func ParseToData(params Parameter) (content []byte, err error) {
