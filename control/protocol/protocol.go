@@ -2,20 +2,16 @@ package protocol
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"strings"
-	"sync"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/gopherty/v2rayW/control/v2ray"
 	"github.com/gopherty/v2rayW/db"
 	"github.com/gopherty/v2rayW/logger"
 	"github.com/gopherty/v2rayW/model"
 	"github.com/gopherty/v2rayW/model/proxy"
 	"github.com/gopherty/v2rayW/serve"
-	"github.com/gopherty/v2rayW/utils"
 )
 
 // Dispatcher 协议功能相关的控制器
@@ -112,9 +108,10 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 		})
 		return
 	}
+
 	var v2rayCnf []byte
 	if params.Custom {
-		cnf := v2ray.NewConfig()
+		cnf := NewConfig()
 		err := json.Unmarshal([]byte(params.ConfigFile), cnf)
 		if err != nil {
 			logger.Logger().Error(err.Error())
@@ -126,12 +123,6 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 			return
 		}
 
-		// 不允许改变日志输出
-		cnf.Log = map[string]interface{}{
-			"access":   "",
-			"error":    "",
-			"loglevel": "warning",
-		}
 		data, err := json.MarshalIndent(cnf, "", "    ")
 		if err != nil {
 			logger.Logger().Error(err.Error())
@@ -144,7 +135,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 		}
 		v2rayCnf = data
 	} else {
-		content, err := ParseToData(params)
+		data, err := NewParser().ParseData(params)
 		if err != nil {
 			logger.Logger().Error(err.Error())
 			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -154,7 +145,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 			})
 			return
 		}
-		v2rayCnf = content
+		v2rayCnf = data
 	}
 
 	// 获取数据库对象
@@ -242,7 +233,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 			return
 		}
 		id = socks.ID
-	case Shadowsocks:
+	case ShadowSocks:
 		shadowsocks := &proxy.Shadowsocks{
 			UID:        uint64(params.UID),
 			Name:       params.Name,
@@ -285,7 +276,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 
 // DeleteProxyProtocol 删除代理协议
 func (Dispatcher) DeleteProxyProtocol(c *gin.Context) {
-	var params DeleteParams
+	var params Parameter
 	err := c.ShouldBind(&params)
 	if err != nil {
 		logger.Logger().Error(err.Error())
@@ -299,26 +290,26 @@ func (Dispatcher) DeleteProxyProtocol(c *gin.Context) {
 
 	var protocolName string
 	var bean interface{}
-	switch strings.ToUpper(params.ProtocolName) {
+	switch strings.ToUpper(params.Name) {
 	case Vmess:
 		protocolName = "vmess"
 		bean = proxy.Vmess{
-			ID: uint64(params.ProtocolID),
+			ID: uint64(params.ID),
 		}
 	case Vless:
 		protocolName = "vless"
 		bean = proxy.Vless{
-			ID: uint64(params.ProtocolID),
+			ID: uint64(params.ID),
 		}
 	case Socks:
 		protocolName = "socks"
 		bean = proxy.Socks{
-			ID: uint64(params.ProtocolID),
+			ID: uint64(params.ID),
 		}
-	case Shadowsocks:
+	case ShadowSocks:
 		protocolName = "shadowsocks"
 		bean = proxy.Shadowsocks{
-			ID: uint64(params.ProtocolID),
+			ID: uint64(params.ID),
 		}
 	default:
 		protocolName = "undefine"
@@ -364,8 +355,10 @@ func (Dispatcher) UpdateProxyProtocol(c *gin.Context) {
 	}
 
 	var cnf string
-	if !params.Custom {
-		content, err := ParseToData(params)
+	if params.Custom {
+		cnf = params.ConfigFile
+	} else {
+		content, err := NewParser().ParseData(params)
 		if err != nil {
 			logger.Logger().Error(err.Error())
 			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -376,8 +369,6 @@ func (Dispatcher) UpdateProxyProtocol(c *gin.Context) {
 			return
 		}
 		cnf = string(content)
-	} else {
-		cnf = params.ConfigFile
 	}
 
 	engine := db.Engine()
@@ -457,7 +448,7 @@ func (Dispatcher) UpdateProxyProtocol(c *gin.Context) {
 			})
 			return
 		}
-	case Shadowsocks:
+	case ShadowSocks:
 		shadowsocks := &proxy.Shadowsocks{
 			Name:       params.Name,
 			Address:    params.Address,
@@ -544,107 +535,4 @@ func (Dispatcher) ClearProxyProtocol(c *gin.Context) {
 	_, err = session.Delete(&proxy.Vmess{UID: uint64(params.UID)})
 	_, err = session.Delete(&proxy.Socks{UID: uint64(params.UID)})
 	_, err = session.Delete(&proxy.Shadowsocks{UID: uint64(params.UID)})
-}
-
-// ParseToData .
-func ParseToData(params Parameter) (content []byte, err error) {
-	cnf := v2ray.NewConfig()
-	path := utils.BasePath() + "/v2ray.json"
-
-	var mu sync.Mutex
-	mu.Lock()
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		mu.Unlock()
-		return
-	}
-	mu.Unlock()
-
-	err = json.Unmarshal(data, cnf)
-	if err != nil {
-		return
-	}
-
-	// 国内直连，开启后启动 v2ray 启动会变慢。
-	if params.Direct {
-		cnf.Routing = map[string]interface{}{
-			"domainStrategy": "IPOnDemand",
-			"rules": []map[string]interface{}{
-				{
-					"type":        "field",
-					"outboundTag": "direct",
-					"domain":      []string{"geosite:cn"}, // 中国大陆主流网站的域名
-				},
-				{
-					"type":        "field",
-					"outboundTag": "direct",
-					"ip": []string{
-						"geoip:cn",      // 中国大陆的 IP
-						"geoip:private", // 私有地址 IP，如路由器等
-					},
-				},
-			},
-		}
-		cnf.Outbounds = []map[string]interface{}{
-			{},
-			{
-				"protocol": "freedom",
-				"settings": map[string]interface{}{},
-				"tag":      "direct",
-			},
-		}
-	} else {
-		cnf.Routing = map[string]interface{}{}
-		cnf.Outbounds = []map[string]interface{}{
-			{},
-		}
-	}
-
-	param := v2ray.ProtocolParam{
-		Protocol: params.Protocol,
-		ID:       params.ID,
-		Address:  params.Address,
-		Port:     params.Port,
-		UserID:   params.UserID,
-		AlertID:  params.AlertID,
-		// Flow:        params.Flow,
-		Encryption:  params.Encryption,
-		Level:       params.Level,
-		Security:    params.Security,
-		User:        params.User,
-		Passwd:      params.Passwd,
-		Network:     params.Network,
-		Domains:     params.Domains,
-		Path:        params.Path,
-		NetSecurity: params.NetSecurity,
-		Direct:      params.Direct,
-	}
-	switch strings.ToUpper(params.Protocol) {
-	case "VMESS":
-		err = v2ray.ParseVmessOutbound(param, cnf)
-		if err != nil {
-			return
-		}
-	case "VLESS":
-		err = v2ray.ParseVlessOutbound(param, cnf)
-		if err != nil {
-			return
-		}
-	case "SOCKS":
-		err = v2ray.ParseSocksOutbound(param, cnf)
-		if err != nil {
-			return
-		}
-	case "SHADOWSOCKS":
-		err = v2ray.ParseShadowsocksOutbound(param, cnf)
-		if err != nil {
-			return
-		}
-	}
-
-	content, err = json.MarshalIndent(cnf, "", "    ")
-	if err != nil {
-		return
-	}
-	return
 }

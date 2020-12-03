@@ -11,7 +11,7 @@
     "inbounds": [
         {
             "listen": "127.0.0.1",
-            "port": 1080,
+            "port": 10801,
             "protocol": "socks",
             "settings": {
                 "auth": "noauth"
@@ -25,7 +25,33 @@
             }
         }
     ],
-    "outbounds": [],
+    "outbounds": [
+        {
+            "protocol": "vmess",
+            "settings": {
+                "vnext": [
+                    {
+                        "address": "fr.sangyu.tw",
+                        "port": 443,
+                        "users": [
+                            {
+                                "alterId": 233,
+                                "id": "ce14d788-0f79-491e-85ca-05240612f28a",
+                                "level": 2,
+                                "security": "none"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "streamSettings": {
+                "network": "ws",
+                "wsSettings": {
+                    "path": "/"
+                }
+            }
+        }
+    ],
     "transport": {},
     "stats": {},
     "reverse": {}

@@ -3,6 +3,8 @@ package subscribe
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -203,7 +205,6 @@ func (Dispatcher) SubscribeProxyProtocol(c *gin.Context) {
 }
 
 func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vmess, sockss []proxy.Socks, sss []proxy.Shadowsocks, err error) {
-	b := make([]byte, 10240)
 
 	resp, err := http.Get(urlAddr)
 	if err != nil {
@@ -211,17 +212,23 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 	}
 	defer resp.Body.Close()
 
-	// base64 decode
-	n, err := resp.Body.Read(b)
+	if resp.StatusCode != http.StatusOK {
+		err = fmt.Errorf("Request failed.Status: %v", resp.Status)
+		return
+	}
+	var b []byte
+	b, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return
 	}
 
-	strs, err := base64.StdEncoding.DecodeString(string(b[:n]))
+	strs, err := base64.StdEncoding.DecodeString(string(b))
 	if err != nil {
 		return
 	}
 
+	// 代理协议解析器
+	parser := ptl.NewParser()
 	protocols := strings.Split(string(strs), "\n")
 	var data []byte
 	var jsonData []byte
@@ -232,6 +239,7 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 	var userCnf, serverCnf []string
 
 	for _, protocol := range protocols {
+		// 解析订阅内容
 		content := strings.Split(protocol, "://")
 		if len(content) != 2 {
 			break
@@ -284,7 +292,7 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 				break
 			}
 
-			jsonData, err = ptl.ParseToData(ptl.Parameter{
+			jsonData, err = parser.ParseData(ptl.Parameter{
 				UID:         uid,
 				Protocol:    "vmess",
 				Name:        vms.Ps,
@@ -298,6 +306,7 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 				NetSecurity: tls,
 				Path:        vms.Path,
 				Domains:     vms.Host,
+				Subscribe:   true,
 			})
 			if err != nil {
 				break
@@ -340,7 +349,7 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 				break
 			}
 
-			jsonData, err = ptl.ParseToData(ptl.Parameter{
+			jsonData, err = parser.ParseData(ptl.Parameter{
 				UID:         uid,
 				Protocol:    "vless",
 				Name:        vls.Ps,
@@ -353,6 +362,7 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 				Network:     vls.Net,
 				NetSecurity: vls.Sec,
 				Path:        vls.Path,
+				Subscribe:   true,
 			})
 			if err != nil {
 				break
@@ -388,14 +398,15 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 			}
 			vlesss = append(vlesss, proVless)
 		case "SOCKS":
-			jsonData, err = ptl.ParseToData(ptl.Parameter{
-				UID:      uid,
-				Protocol: "socks",
-				Name:     name,
-				Address:  serverCnf[0],
-				Port:     port,
-				User:     userCnf[0],
-				Passwd:   userCnf[1],
+			jsonData, err = parser.ParseData(ptl.Parameter{
+				UID:       uid,
+				Protocol:  "socks",
+				Name:      name,
+				Address:   serverCnf[0],
+				Port:      port,
+				User:      userCnf[0],
+				Passwd:    userCnf[1],
+				Subscribe: true,
 			})
 			if err != nil {
 				break
@@ -427,14 +438,15 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 			sockss = append(sockss, socks)
 		case "SS":
 			var jsonData []byte
-			jsonData, err = ptl.ParseToData(ptl.Parameter{
-				UID:      uid,
-				Protocol: "shadowsocks",
-				Name:     name,
-				Address:  serverCnf[0],
-				Port:     port,
-				Security: userCnf[0],
-				Passwd:   userCnf[1],
+			jsonData, err = parser.ParseData(ptl.Parameter{
+				UID:       uid,
+				Protocol:  "shadowsocks",
+				Name:      name,
+				Address:   serverCnf[0],
+				Port:      port,
+				Security:  userCnf[0],
+				Passwd:    userCnf[1],
+				Subscribe: true,
 			})
 			if err != nil {
 				break
@@ -469,6 +481,7 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 	return
 }
 
+// 参数类型转换
 func convert(vms vmess) (port int, aid int, v int, tls string, err error) {
 	port, err = strconv.Atoi(vms.Port)
 	if err != nil {

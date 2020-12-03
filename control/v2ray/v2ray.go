@@ -6,18 +6,17 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strings"
 	"sync"
 
 	"github.com/gopherty/broadcaster"
 
+	"github.com/gopherty/v2rayW/control/protocol"
 	"github.com/gopherty/v2rayW/logger"
 	"github.com/gopherty/v2rayW/model"
 	"github.com/gopherty/v2rayW/serve"
 	"github.com/gopherty/v2rayW/token"
 	"github.com/gopherty/v2rayW/utils"
 
-	"github.com/gin-gonic/gin/binding"
 	"github.com/gorilla/websocket"
 
 	"v2ray.com/core"
@@ -38,11 +37,6 @@ var (
 
 	// 服务器状态推送
 	subj = broadcaster.NewSubject()
-	// v2ray 服务状态, true 代表运行，false 代表停止。
-	stat = &Status{}
-
-	// 锁
-	mu sync.Mutex
 
 	// 日志输出相关变量
 	r, w, stdout *os.File
@@ -51,10 +45,13 @@ var (
 
 // Dispatcher v2ray 功能相关的控制器
 type Dispatcher struct {
+	mu sync.Mutex
+
+	status *Status
 }
 
 // Start 启动 v2ray 服务
-func (Dispatcher) Start(c *gin.Context) {
+func (d *Dispatcher) Start(c *gin.Context) {
 	var err error
 	// 启动失败时还原之前的 instance 状态
 	preInstance := instance
@@ -75,12 +72,11 @@ func (Dispatcher) Start(c *gin.Context) {
 		})
 		return
 	}
-	protocol := params.Protocol
-	id := params.ID
 
+	cnf := protocol.NewConfig()
+	// v2ray 配置文件暂不支持外部定位位置
 	path := utils.BasePath() + "/v2ray.json"
-	content := []byte(params.ConfigFile)
-	err = json.Unmarshal(content, cnf)
+	err = json.Unmarshal([]byte(params.ConfigFile), cnf)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -90,7 +86,11 @@ func (Dispatcher) Start(c *gin.Context) {
 		})
 		return
 	}
-	err = ioutil.WriteFile(path, content, os.ModePerm)
+
+	// 以下加锁
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	err = ioutil.WriteFile(path, []byte(params.ConfigFile), os.ModePerm)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -190,12 +190,12 @@ func (Dispatcher) Start(c *gin.Context) {
 	}()
 
 	// 保存 v2ray 的状态
-	mu.Lock()
-	stat.id = id
-	stat.protocol = protocol
-	stat.running = true
-	mu.Unlock()
-	subj.Publish(stat)
+	d.status = &Status{
+		ProtoName: params.Protocol,
+		ID:        params.ID,
+		Running:   true,
+	}
+	subj.Publish(d.status)
 
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
 		Code: serve.StatusOK,
@@ -206,7 +206,7 @@ func (Dispatcher) Start(c *gin.Context) {
 }
 
 // Stop 关闭 v2ray 服务
-func (Dispatcher) Stop(c *gin.Context) {
+func (d *Dispatcher) Stop(c *gin.Context) {
 	// 归还控制台
 	defer func() {
 		os.Stdout = stdout
@@ -236,10 +236,10 @@ func (Dispatcher) Stop(c *gin.Context) {
 	instance = nil
 
 	// 保存 v2ray 的状态
-	mu.Lock()
-	stat.running = false
-	mu.Unlock()
-	subj.Publish(stat)
+	d.mu.Lock()
+	d.status.Running = false
+	d.mu.Unlock()
+	subj.Publish(d.status)
 
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
 		Code: serve.StatusOK,
@@ -250,7 +250,7 @@ func (Dispatcher) Stop(c *gin.Context) {
 }
 
 // Logs v2ray 启动后日志输出接口
-func (Dispatcher) Logs(c *gin.Context) {
+func (d *Dispatcher) Logs(c *gin.Context) {
 	// 将 token 加入到 websocket 的子协议中，不设置 chrome 浏览器，不能使用 websocket。
 	upgrader.Subprotocols = []string{c.GetHeader("Sec-WebSocket-Protocol")}
 	// 获取日志输出
@@ -311,7 +311,7 @@ func (Dispatcher) Logs(c *gin.Context) {
 }
 
 // Status 服务器端 v2ray 的状态
-func (Dispatcher) Status(c *gin.Context) {
+func (d *Dispatcher) Status(c *gin.Context) {
 	// 将 token 加入到 websocket 的子协议中，不设置 chrome 浏览器，不能使用 websocket。
 	upgrader.Subprotocols = []string{c.GetHeader("Sec-WebSocket-Protocol")}
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
@@ -335,11 +335,11 @@ func (Dispatcher) Status(c *gin.Context) {
 	}
 
 	subs := subj.HandleFunc(func(msg interface{}) {
-		if stat, ok := msg.(*Status); ok {
+		if status, ok := msg.(*Status); ok {
 			err := conn.WriteJSON(gin.H{
-				"running":  stat.running,
-				"protocol": stat.protocol,
-				"id":       stat.id,
+				"running":  status.Running,
+				"protocol": status.ProtoName,
+				"id":       status.ID,
 			})
 			if err != nil {
 				logger.Logger().Error(err.Error())
@@ -347,7 +347,9 @@ func (Dispatcher) Status(c *gin.Context) {
 			}
 		}
 	})
-	subj.Publish(stat)
+	if d.status != nil {
+		subj.Publish(d.status)
+	}
 
 	// 读取客户端发送的关闭连接。
 	for {
@@ -361,149 +363,67 @@ func (Dispatcher) Status(c *gin.Context) {
 }
 
 // Settings 修改 v2ray 的配置文件
-func (Dispatcher) Settings(c *gin.Context) {
-	var param SettingsParam
-	err := c.ShouldBindWith(&param, binding.Default(c.Request.Method, c.ContentType()))
-	if err != nil {
-		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
-			Code:        serve.StatusParamNotMatched,
-			Description: "解析参数错误",
-			Error:       err.Error(),
-		})
-		return
-	}
+// func (Dispatcher) Settings(c *gin.Context) {
+// 	var param SettingsParam
+// 	err := c.ShouldBindWith(&param, binding.Default(c.Request.Method, c.ContentType()))
+// 	if err != nil {
+// 		logger.Logger().Error(err.Error())
+// 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+// 			Code:        serve.StatusParamNotMatched,
+// 			Description: "解析参数错误",
+// 			Error:       err.Error(),
+// 		})
+// 		return
+// 	}
 
-	path := utils.BasePath() + "/v2ray.json"
-	mu.Lock()
-	defer mu.Unlock()
-	cnf.Inbounds[0]["listen"] = param.Address
-	cnf.Inbounds[0]["port"] = param.Port
-	cnf.Inbounds[0]["protocol"] = param.Protocol
+// 	path := utils.BasePath() + "/v2ray.json"
+// 	mu.Lock()
+// 	defer mu.Unlock()
+// 	cnf.Inbounds[0]["listen"] = param.Address
+// 	cnf.Inbounds[0]["port"] = param.Port
+// 	cnf.Inbounds[0]["protocol"] = param.Protocol
 
-	content, err := json.MarshalIndent(cnf, "", "	")
-	if err != nil {
-		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
-			Code:        serve.StatusServerError,
-			Description: "保存失败",
-			Error:       err.Error(),
-		})
-		return
-	}
-	err = ioutil.WriteFile(path, content, os.ModePerm)
-	if err != nil {
-		logger.Logger().Error(err.Error())
-		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
-			Code:        serve.StatusServerError,
-			Description: "保存失败",
-			Error:       err.Error(),
-		})
-		return
-	}
+// 	content, err := json.MarshalIndent(cnf, "", "	")
+// 	if err != nil {
+// 		logger.Logger().Error(err.Error())
+// 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+// 			Code:        serve.StatusServerError,
+// 			Description: "保存失败",
+// 			Error:       err.Error(),
+// 		})
+// 		return
+// 	}
+// 	err = ioutil.WriteFile(path, content, os.ModePerm)
+// 	if err != nil {
+// 		logger.Logger().Error(err.Error())
+// 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+// 			Code:        serve.StatusServerError,
+// 			Description: "保存失败",
+// 			Error:       err.Error(),
+// 		})
+// 		return
+// 	}
 
-	c.JSON(http.StatusOK, model.BackToFrontEndData{
-		Code: serve.StatusOK,
-		Data: map[string]interface{}{
-			"msg": "保存成功",
-		},
-	})
-}
+// 	c.JSON(http.StatusOK, model.BackToFrontEndData{
+// 		Code: serve.StatusOK,
+// 		Data: map[string]interface{}{
+// 			"msg": "保存成功",
+// 		},
+// 	})
+// }
 
 // ListSettings 获取 v2ray 配置文件参数
-func (Dispatcher) ListSettings(c *gin.Context) {
-	settings := map[string]interface{}{
-		"address":  cnf.Inbounds[0]["listen"],
-		"port":     cnf.Inbounds[0]["port"],
-		"protocol": cnf.Inbounds[0]["protocol"],
-	}
-	c.JSON(http.StatusOK, model.BackToFrontEndData{
-		Code: serve.StatusOK,
-		Data: map[string]interface{}{
-			"msg":      "获取成功",
-			"settings": settings,
-		},
-	})
-}
-
-// parmasToJSON 将 v2ray 启动参数转化为配置文件
-func parmasToJSON(c *gin.Context) (protocol string, id int, err error) {
-	// 绑定参数
-	var param ProtocolParam
-	err = c.ShouldBindWith(&param, binding.Default(c.Request.Method, c.ContentType()))
-	if err != nil {
-		return
-	}
-
-	// 国内直连，开启后启动 v2ray 启动会变慢。
-	if param.Direct {
-		cnf.Routing = map[string]interface{}{
-			"domainStrategy": "IPOnDemand",
-			"rules": []map[string]interface{}{
-				{
-					"type":        "field",
-					"outboundTag": "direct",
-					"domain":      []string{"geosite:cn"}, // 中国大陆主流网站的域名
-				},
-				{
-					"type":        "field",
-					"outboundTag": "direct",
-					"ip": []string{
-						"geoip:cn",      // 中国大陆的 IP
-						"geoip:private", // 私有地址 IP，如路由器等
-					},
-				},
-			},
-		}
-		cnf.Outbounds = []map[string]interface{}{
-			{},
-			{
-				"protocol": "freedom",
-				"settings": map[string]interface{}{},
-				"tag":      "direct",
-			},
-		}
-	} else {
-		cnf.Routing = map[string]interface{}{}
-		cnf.Outbounds = []map[string]interface{}{
-			{},
-		}
-	}
-
-	path := utils.BasePath() + "/v2ray.json"
-	var content []byte
-	switch strings.ToUpper(param.Protocol) {
-	case "VMESS":
-		err = ParseVmessOutbound(param)
-		if err != nil {
-			return
-		}
-	case "VLESS":
-		err = ParseVlessOutbound(param)
-		if err != nil {
-			return
-		}
-	case "SOCKS":
-		err = ParseSocksOutbound(param)
-		if err != nil {
-			return
-		}
-	case "SHADOWSOCKS":
-		err = ParseShadowsocksOutbound(param)
-		if err != nil {
-			return
-		}
-	}
-
-	content, err = json.MarshalIndent(cnf, "", "	")
-	if err != nil {
-		return
-	}
-
-	err = ioutil.WriteFile(path, content, os.ModePerm)
-	if err != nil {
-		return
-	}
-
-	return param.Protocol, param.ID, err
-}
+// func (Dispatcher) ListSettings(c *gin.Context) {
+// 	settings := map[string]interface{}{
+// 		"address":  cnf.Inbounds[0]["listen"],
+// 		"port":     cnf.Inbounds[0]["port"],
+// 		"protocol": cnf.Inbounds[0]["protocol"],
+// 	}
+// 	c.JSON(http.StatusOK, model.BackToFrontEndData{
+// 		Code: serve.StatusOK,
+// 		Data: map[string]interface{}{
+// 			"msg":      "获取成功",
+// 			"settings": settings,
+// 		},
+// 	})
+// }

@@ -10,7 +10,7 @@
     },
     "HTTP": {
         "TLS": false,
-        "Address": "localhost:9200",
+        "Address": "localhost:9201",
         "CertFile": "",
         "KeyFile": ""
     },

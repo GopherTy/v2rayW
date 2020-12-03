@@ -5,10 +5,10 @@ const (
 	Vmess       = "VMESS"
 	Vless       = "VLESS"
 	Socks       = "SOCKS"
-	Shadowsocks = "SHADOWSOCKS"
+	ShadowSocks = "SHADOWSOCKS"
 )
 
-// Parameter 协议参数
+// Parameter 前后端交互参数
 type Parameter struct {
 	UID int `json:"uId"` // 登录用户的 id
 
@@ -43,12 +43,9 @@ type Parameter struct {
 	// 配置字符串
 	ConfigFile string `json:"configFile"`
 
+	// 是否为订阅，订阅时不读取 inbounds
+	Subscribe bool
+
 	// 国内直连
 	Direct bool `json:"direct"`
-}
-
-// DeleteParams 删除协议参数
-type DeleteParams struct {
-	ProtocolName string `json:"name"` // 协议名称
-	ProtocolID   int    `json:"id"`   // 协议 id
 }

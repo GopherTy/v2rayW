@@ -31,16 +31,16 @@ type ProtocolParam struct {
 	Direct bool `json:"direct"`
 }
 
-// SettingsParam .
-type SettingsParam struct {
-	Protocol string `json:"protocol"`
-	Address  string `json:"address"`
-	Port     int    `json:"port"`
-}
+// // SettingsParam .
+// type SettingsParam struct {
+// 	Protocol string `json:"protocol"`
+// 	Address  string `json:"address"`
+// 	Port     int    `json:"port"`
+// }
 
 // Status v2ray 服务器状态
 type Status struct {
-	protocol string
-	id       int
-	running  bool
+	ProtoName string
+	ID        int
+	Running   bool
 }
