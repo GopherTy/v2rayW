@@ -13,6 +13,7 @@ function manual(){
                 build for linux(编译到linux平台)"
     echo "l/linux           build for linux(编译到linux)"
     echo "w/windows         build for windows(编译到windows)"
+    echo "d/darwin build for macos(编译到macos)"
     echo "s/source          build view source(编译前端视图文件)"
     echo "t/test            feature test(功能测试)"
 }
@@ -31,13 +32,13 @@ case $1 in
         cd $DirRoot && go build -ldflags "-s -w" -o "$DirRoot/bin/$Target"
     ;; 
     w|windows)
-	export CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ GOOS=windows GOARCH=amd64
+	export  GOOS=windows CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ GOARCH=amd64
         cd $DirRoot && go build -ldflags "-s -w" -o "$DirRoot/bin/$Target".exe
     ;;
-    # m|mac)
-    #     export GOOS=darwin CGO_ENABLED=1
-    #     cd $DirRoot && go build -ldflags "-s -w" -o "$DirRoot/bin/$Target".app
-    # ;;
+    #d|darwin)
+    #    export GOOS=darwin CGO_ENABLED=1 
+    #	cd $DirRoot && go build -ldflags "-s -w" --tags "linux" -o "$DirRoot/bin/$Target"
+    #;;
     t|test)
         for i in ${!TestItems[@]}
         do 

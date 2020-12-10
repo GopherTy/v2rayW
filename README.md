@@ -1,16 +1,16 @@
 # v2rayW
 
-本项目为 `ProjectV`（迁移至 v2fly） 项目中 `v2ray-core` 的 web 客户端。通过网页端配置代理协议进行科学上网。目前支持 `vmess` 、`vless` 协议，其他协议和更多功能将在之后进行迭代。
+本项目为 `ProjectV`（正在迁移至 v2fly） 项目中 `v2ray-core` 的 web 客户端。目前支持 `vmess` 、`vless`、`scoks` 、`shadowsocks` 入口协议，支持订阅，分享（二维码、链接、完整配置）、导入等功能。更多功能将在之后进行迭代开发。
 
 ## Install 
 
-本客户端支持 linux、windows 请下载对应平台的 release 进行安装使用。
+本客户端支持 linux、windows 请下载对应平台最新的 release 安装使用。
 
 安装步骤如下：
 
 1.下载对应平台最新的 release 。或者 fork 该项目然后执行编译脚本 `build.sh`  。
 
-> 注意：若需要打包 view 到 go 中需要安装 statik。 
+> 注意：若需要打包 view 视图模块到 go 中需要安装 statik。前端在 `v2rayW-view` 项目中。
 >
 > 安装命令: go get github.com/rakyll/statik @v0.1.7
 
@@ -55,21 +55,21 @@
 
 成功启动应用后打开 http://localhost:9200 使用，默认端口为 9200，可以在配置文件（config.json）中进行修改。
 
-Step1: 设置浏览器的代理协议，默认代理协议为 socks5 暂不支持修改。 默认代理端口为 1080 ，可以通过参数设置进行修改！
+Step1: 配置代理协议，本地默认代理协议为 socks5，端口为 1080 ，查看对应代理协议的完整配置进行修改！
 
-Step2: 在服务管理里配置好正确的代理协议，点击启动按钮。  
+Step2: 配置无误后点击启动即可。  
 
-以下是相关功能截图
+以下是本应用界面的部分截图:
 
-![index.png](https://i.loli.net/2020/10/12/pq5rE8VAb1xJIWw.png)
+![protocol.png](https://i.loli.net/2020/12/10/btSVzBPsfnMmqEG.png)
 
-![protocol.png](https://i.loli.net/2020/10/12/Kp1Wwbh68xz5mIR.png)
+![index.png](https://i.loli.net/2020/12/10/MZmlKhI4SzbY52X.png)
 
-![add.png](https://i.loli.net/2020/10/12/GMcHvKTp9XfUiNh.png)
+![vmess.png](https://i.loli.net/2020/12/10/zVcx4DFGeLSZiBK.png)
 
-![add1.png](https://i.loli.net/2020/10/12/OA3WPFoxstwnaKp.png)
+![vless.png](https://i.loli.net/2020/12/10/WAQGXZ4CUuS3d8n.png)
 
-![settings.png](https://i.loli.net/2020/10/12/9FYBskCuot6qVri.png)
+最后祝你玩的愉快。
 
 ## Contributing
 
@@ -78,3 +78,4 @@ Step2: 在服务管理里配置好正确的代理协议，点击启动按钮。
 ## License
 
 [MIT](https://github.com/GopherTy/v2ray-web/blob/master/LICENSE) © GopherTy
+
