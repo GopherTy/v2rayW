@@ -20,7 +20,7 @@ type Config struct {
 type HTTP struct {
 	TLS      bool
 	Address  string // 地址
-	CertFile string //证书验证文件
+	CertFile string // 证书验证文件
 	KeyFile  string // 证书
 }
 
@@ -35,7 +35,7 @@ type DataBase struct {
 	MaxIdleConns int // 数据库连接最大空闲数
 
 	Cached            int  // 缓存大小
-	UserManageDisable bool //是否开启用户管理
+	UserManageDisable bool // 是否开启用户管理
 }
 
 // Logger 日志对象

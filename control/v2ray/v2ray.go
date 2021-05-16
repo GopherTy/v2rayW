@@ -19,7 +19,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"v2ray.com/core"
+	"github.com/v2fly/v2ray-core/v4"
 
 	"github.com/gin-gonic/gin"
 )

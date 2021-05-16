@@ -12,7 +12,7 @@ require (
 	github.com/rakyll/statik v0.1.7
 	go.uber.org/zap v1.15.0
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
-	v2ray.com/core v4.15.0+incompatible
+	github.com/v2fly/v2ray-core/v4 v4.38.2
 )
 
-replace v2ray.com/core => ../v2ray-core-4.34.0
+

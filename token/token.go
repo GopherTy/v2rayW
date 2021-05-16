@@ -14,7 +14,7 @@ var (
 
 // Token 基于 jwt token 的认证结构
 type Token struct {
-	AccessToken  string //访问令牌
+	AccessToken  string // 访问令牌
 	RefreshToken string // 刷新令牌
 	AtExpires    int64  // 访问令牌过期时间，一般为 15 分钟。
 	RtExpires    int64  // 当访问令牌过期后，可以使用刷新令牌来重拾。刷新令牌过期时间，一般为 7 天。
