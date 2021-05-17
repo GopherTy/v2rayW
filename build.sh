@@ -32,13 +32,13 @@ case $1 in
         cd $DirRoot && go build -ldflags "-s -w" -o "$DirRoot/bin/$Target"
     ;; 
     w|windows)
-	export  GOOS=windows CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ GOARCH=amd64
+	      export GOOS=windows CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ GOARCH=amd64
         cd $DirRoot && go build -ldflags "-s -w" -o "$DirRoot/bin/$Target".exe
     ;;
-    #d|darwin)
-    #    export GOOS=darwin CGO_ENABLED=1 
-    #	cd $DirRoot && go build -ldflags "-s -w" --tags "linux" -o "$DirRoot/bin/$Target"
-    #;;
+    d|darwin)
+        export GOOS=darwin CGO_ENABLED=1
+    	cd $DirRoot && go build -ldflags "-s -w"  -o "$DirRoot/bin/$Target"
+    ;;
     t|test)
         for i in ${!TestItems[@]}
         do 

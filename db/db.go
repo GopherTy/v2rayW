@@ -19,8 +19,8 @@ var (
 type Register struct {
 }
 
-// Regist 实现 IRegister 接口，以注册获取初始化好的 db 对象。
-func (Register) Regist() {
+// CheckIn 实现 IRegister 接口，以注册获取初始化好的 db 对象。
+func (Register) CheckIn() {
 	var err error
 	cnf := config.Configure()
 

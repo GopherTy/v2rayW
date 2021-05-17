@@ -13,8 +13,8 @@ type Register struct {
 
 var assetView http.FileSystem
 
-// Regist 实现 IRegister 接口，注册视图资源。
-func (Register) Regist() {
+// CheckIn 实现 IRegister 接口，注册视图资源。
+func (Register) CheckIn() {
 	var err error
 	assetView, err = fs.NewWithNamespace("view")
 	if err != nil {

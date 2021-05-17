@@ -17,8 +17,8 @@ var logger *zap.Logger
 type Register struct {
 }
 
-// Regist 实现 IRegister 接口，以注册获取初始化好的 logger 对象。
-func (Register) Regist() {
+// CheckIn 实现 IRegister 接口，以注册获取初始化好的 logger 对象。
+func (Register) CheckIn() {
 	cnf := config.Configure()
 
 	// 是否输出日志文件

@@ -9,7 +9,7 @@ import (
 
 // IRegister 初始化对象注册接口
 type IRegister interface {
-	Regist()
+	CheckIn()
 }
 
 // Init 初始化数据库对象和日志对象
@@ -23,6 +23,6 @@ func Init() {
 	}
 
 	for _, v := range registers {
-		v.Regist()
+		v.CheckIn()
 	}
 }
