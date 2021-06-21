@@ -8,8 +8,8 @@ go:
 - "1.16"
 env:
   - GO111MODULE=on
-before_script:
-  - go install github.com/rakyll/statik
+#before_script:
+#  - go install github.com/rakyll/statik
 script:
   - ./build.sh s view 
   - ./build.sh l 
