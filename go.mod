@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/gin-gonic/gin v1.6.3
+	github.com/gin-gonic/gin v1.7.0
 	github.com/go-xorm/xorm v0.7.9
 	github.com/gopherty/broadcaster v1.0.0
 	github.com/gorilla/websocket v1.4.2
