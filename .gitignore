@@ -19,3 +19,4 @@ vendor/
 bin/v2rayW*
 bin/log
 .vscode
+.idea

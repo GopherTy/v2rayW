@@ -13,7 +13,7 @@ function manual(){
                 build for linux(编译到linux平台)"
     echo "l/linux           build for linux(编译到linux)"
     echo "w/windows         build for windows(编译到windows)"
-    echo "d/darwin build for macos(编译到macos)"
+    echo "d/darwin          build for macos(编译到macos)"
     echo "s/source          build view source(编译前端视图文件)"
     echo "t/test            feature test(功能测试)"
 }
