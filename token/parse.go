@@ -12,7 +12,7 @@ import (
 
 // parse 包解析前端传过来的 token 字符串用于认证。
 
-// ExtractToken 从 requset 对象中解析出 token 字符串
+// ExtractToken 从 request 对象中解析出 token 字符串
 func ExtractToken(r *http.Request) string {
 	bearerToken := r.Header.Get("Authorization")
 
@@ -31,7 +31,7 @@ func ValidWSToken(r *http.Request) (err error) {
 		return
 	}
 
-	if _, ok := token.Claims.(jwt.Claims); !ok && !token.Valid {
+	if !token.Valid {
 		return errors.New("token invalid")
 	}
 	return
@@ -55,7 +55,7 @@ func ValidToken(r *http.Request) (err error) {
 		return
 	}
 
-	if _, ok := token.Claims.(jwt.Claims); !ok && !token.Valid {
+	if!token.Valid {
 		return errors.New("token invalid")
 	}
 	return

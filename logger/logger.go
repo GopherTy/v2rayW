@@ -93,7 +93,9 @@ func (Register) CheckIn() {
 		fmt.Println("Init logger fail: ", err)
 		os.Exit(1)
 	}
-	defer logger.Sync()
+	defer func() {
+		_ = logger.Sync()
+	}()
 
 	logger.Info("Init logger success")
 }

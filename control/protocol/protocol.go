@@ -514,7 +514,7 @@ func (Dispatcher) ClearProxyProtocol(c *gin.Context) {
 	err = session.Begin()
 	defer func() {
 		if err != nil {
-			session.Rollback()
+			_ = session.Rollback()
 			logger.Logger().Error(err.Error())
 			c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
 				Code:        serve.StatusDBError,
@@ -522,8 +522,8 @@ func (Dispatcher) ClearProxyProtocol(c *gin.Context) {
 				Error:       err.Error(),
 			})
 		} else {
-			session.Commit()
-			db.Engine().ClearCache(&proxy.Vless{}, &proxy.Vmess{}, &proxy.Socks{}, &proxy.Shadowsocks{})
+			_ = session.Commit()
+			_ = db.Engine().ClearCache(&proxy.Vless{}, &proxy.Vmess{}, &proxy.Socks{}, &proxy.Shadowsocks{})
 			c.JSON(http.StatusOK, model.BackToFrontEndData{
 				Code:        serve.StatusOK,
 				Description: "清空成功",

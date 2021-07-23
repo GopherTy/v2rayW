@@ -113,7 +113,7 @@ func (Register) CheckIn() {
 			logger.Logger().Fatal(err.Error())
 		}
 	}
-	db.Sync2(&proxy.Vmess{}, &proxy.Vless{}, &proxy.Socks{}, &proxy.Shadowsocks{}, &proxy.Subscribe{})
+	_ = db.Sync2(&proxy.Vmess{}, &proxy.Vless{}, &proxy.Socks{}, &proxy.Shadowsocks{}, &proxy.Subscribe{})
 
 	// 是否关闭用户管理
 	if cnf.DB.UserManageDisable {
@@ -151,7 +151,7 @@ func (Register) CheckIn() {
 			logger.Logger().Fatal(err.Error())
 		}
 	}
-	db.Sync2(&users.User{}, &users.UserInfo{}, &users.UserLoginLog{})
+	_ = db.Sync2(&users.User{}, &users.UserInfo{}, &users.UserLoginLog{})
 
 	// 用户权限表
 	exists, err = db.IsTableExist(&auth.Role{})
@@ -174,7 +174,7 @@ func (Register) CheckIn() {
 			logger.Logger().Fatal(err.Error())
 		}
 	}
-	db.Sync2(&auth.Role{}, &auth.Auth{})
+	_ = db.Sync2(&auth.Role{}, &auth.Auth{})
 }
 
 // Engine 获取 db 对象

@@ -277,7 +277,7 @@ func (d *Dispatcher) Logs(c *gin.Context) {
 
 	// 增加订阅
 	logs := make(chan interface{})
-	bc.Subscribe(logs)
+	_ = bc.Subscribe(logs)
 
 	go func() {
 		for {
@@ -303,7 +303,7 @@ func (d *Dispatcher) Logs(c *gin.Context) {
 		_, _, err := conn.ReadMessage()
 		if err != nil {
 			// 取消订阅
-			bc.Unsubscribe(logs)
+			_ = bc.Unsubscribe(logs)
 			logger.Logger().Warn(err.Error())
 			break
 		}
