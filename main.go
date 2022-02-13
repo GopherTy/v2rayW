@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-
 	"github.com/gin-gonic/gin"
 	_ "github.com/gopherty/v2rayW/statik"
 	_ "github.com/mattn/go-sqlite3"

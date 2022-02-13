@@ -53,7 +53,7 @@ var config *Config
 type Register struct {
 }
 
-// Regist 实现 IRegister 接口，以注册获取初始化好的 config 对象。
+// CheckIn 实现 IRegister 接口，以注册获取初始化好的 config 对象。
 func (Register) CheckIn() {
 	basePath := utils.BasePath()
 

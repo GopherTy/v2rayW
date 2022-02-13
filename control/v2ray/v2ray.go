@@ -137,16 +137,20 @@ func (d *Dispatcher) Start(c *gin.Context) {
 		return
 	}
 
+	// 为了打印 v2ray 运行日志
 	// 在 v2ray 启动之前捕获控制台输出。
-	stdout = os.Stdout
 	r, w, err = os.Pipe()
 	if err != nil {
-		os.Stdout = stdout
-		stdout = nil
-		w.Close()
 		logger.Logger().Error(err.Error())
+		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
+			Code:        serve.StatusServerError,
+			Description: "os.Pipe()调用失败",
+			Error:       err.Error(),
+		})
 		return
 	}
+
+	stdout = os.Stdout
 	os.Stdout = w
 	reader := bufio.NewReader(r)
 
@@ -159,13 +163,13 @@ func (d *Dispatcher) Start(c *gin.Context) {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
 			Code:        serve.StatusV2rayError,
-			Description: "v2ray 启动错误",
+			Description: "v2ray 启动失败",
 			Error:       err.Error(),
 		})
 		return
 	}
 
-	// 关闭之前启动成功的示例
+	// 当有多个协议时，一个代理已启动成功时，当另一个代理协议实列对象应该关闭。
 	if preInstance != nil {
 		err = preInstance.Close()
 		if err != nil {
@@ -173,14 +177,17 @@ func (d *Dispatcher) Start(c *gin.Context) {
 		}
 	}
 
-	// 发送日志
+	// 推送日志
 	go func() {
 		for {
+			// v2ray 单行日志输出以换行作为结束符
 			logs, err := reader.ReadBytes('\n')
 			if err != nil {
 				logger.Logger().Error(err.Error())
 				break
 			}
+
+			// 若打开多个网页时，同时推送输出日志
 			err = bc.Publish(logs)
 			if err != nil {
 				logger.Logger().Error(err.Error())
@@ -189,7 +196,8 @@ func (d *Dispatcher) Start(c *gin.Context) {
 		}
 	}()
 
-	// 保存 v2ray 的状态
+	// 服务器保存 v2ray 的状态
+	// 同步至客户端 v2ray 状态
 	d.status = &Status{
 		ProtoName: params.Protocol,
 		ID:        params.ID,
@@ -207,13 +215,6 @@ func (d *Dispatcher) Start(c *gin.Context) {
 
 // Stop 关闭 v2ray 服务
 func (d *Dispatcher) Stop(c *gin.Context) {
-	// 归还控制台
-	defer func() {
-		os.Stdout = stdout
-		stdout = nil
-		w.Close() // 只用关闭 w ，因为 r 被 reader 捕获后，在它关闭时，r也会关闭。
-	}()
-
 	if instance == nil {
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
 			Code:  serve.StatusV2rayError,
@@ -233,13 +234,19 @@ func (d *Dispatcher) Stop(c *gin.Context) {
 		return
 	}
 
+	// 释放资源对象
 	instance = nil
 
-	// 保存 v2ray 的状态
+	// 归还控制台
+	os.Stdout = stdout
+	stdout = nil
+	w.Close() // 只用关闭 w ，因为 r 被 reader 捕获后，在它关闭时，r也会关闭。
+
+	// 同步 v2ray 实列状态
 	d.mu.Lock()
 	d.status.Running = false
-	d.mu.Unlock()
 	subj.Publish(d.status)
+	d.mu.Unlock()
 
 	c.JSON(http.StatusOK, model.BackToFrontEndData{
 		Code: serve.StatusOK,
