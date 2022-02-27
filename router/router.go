@@ -14,7 +14,9 @@ type Router struct {
 // Route 注册路由
 func (Router) Route(engine *gin.Engine) {
 	// 控制器
-	var ctl control.Controller
+	ctl := control.New()
+
+	// 获取当前系统中是否存在可用的配置
 
 	// // v1 REST API
 	// api := engine.Group("/api")

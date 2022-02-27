@@ -9,12 +9,16 @@ import (
 	"github.com/gopherty/v2rayW/control/view"
 )
 
-// Controller 整个应用功能的控制器
-type Controller struct {
+// 整个应用功能的控制器
+type controller struct {
 	RefreshDispathce    refresh.Dispatcher   // test 功能的控制器
 	V2rayDispathcer     v2ray.Dispatcher     // v2ray 功能的控制器
 	UserDispacher       user.Dispatcher      // sign 功能的控制器
 	ProtocolDispathcer  protocol.Dispatcher  // 协议功能的控制器
 	SubscribeDispathcer subscribe.Dispatcher // 订阅功能的控制器
 	ViewDispathcer      view.Dispatcher      // 前端界面的控制器
+}
+
+func New() *controller {
+	return &controller{}
 }
