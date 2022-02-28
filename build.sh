@@ -23,20 +23,23 @@ function buildView(){
     statik -src="$DirRoot/assets/view" -ns $1 -f 
 }
 
+# macOS 跨平台编译安装对应平台依赖后进行打包
+# linux brew install FiloSottile/musl-cross/musl-cross 注：mac m1 不支持
+# windows brew install mingw-w64
 case $1 in 
     s|source)
         buildView $2 
     ;;
     l|linux)
-        export GOOS=linux CGO_ENABLED=1 
+        export GOOS=linux CGO_ENABLED=1 GOARCH=amd64 CC=x86_64-linux-musl-gcc CXX=x86_64-linux-musl-g++
         cd $DirRoot && go build -ldflags "-s -w" -o "$DirRoot/bin/$Target"
     ;; 
     w|windows)
-	      export GOOS=windows CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ GOARCH=amd64
+	      export GOOS=windows CGO_ENABLED=1 GOARCH=amd64 CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++
         cd $DirRoot && go build -ldflags "-s -w" -o "$DirRoot/bin/$Target".exe
     ;;
     d|darwin)
-        export GOOS=darwin CGO_ENABLED=1
+        export GOOS=darwin CGO_ENABLED=1 GOARCH=amd64
     	cd $DirRoot && go build -ldflags "-s -w"  -o "$DirRoot/bin/$Target"
     ;;
     t|test)
