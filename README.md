@@ -1,6 +1,6 @@
 # v2rayW
 
-本项目为 `ProjectV`（正在迁移至 v2fly） 项目中 `v2ray-core` 的 web 客户端。目前支持 `vmess` 、`vless`、`scoks` 、`shadowsocks` 入口协议，支持订阅，分享（二维码、链接、完整配置）、导入等功能。更多功能将在之后进行迭代开发。
+本项目为 `ProjectV`（已迁移至 v2fly） 项目中 **[v2ray-core](https://github.com/v2fly/v2ray-core)** 的 web 客户端。目前支持 `vmess` 、`vless`、`scoks` 、`shadowsocks` 入口协议，支持订阅，分享（二维码、链接、完整配置）、导入等功能。更多功能将在之后进行迭代开发。
 
 ## Install 
 

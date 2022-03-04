@@ -30,17 +30,3 @@ type ProtocolParam struct {
 	// 国内直连
 	Direct bool `json:"direct"`
 }
-
-// // SettingsParam .
-// type SettingsParam struct {
-// 	Protocol string `json:"protocol"`
-// 	Address  string `json:"address"`
-// 	Port     int    `json:"port"`
-// }
-
-// Status v2ray 服务器状态
-type Status struct {
-	ProtoName string
-	ID        int
-	Running   bool
-}

@@ -31,7 +31,7 @@ case $1 in
         buildView $2 
     ;;
     l|linux)
-        export GOOS=linux CGO_ENABLED=1 GOARCH=amd64 CC=x86_64-linux-musl-gcc CXX=x86_64-linux-musl-g++
+        export GOOS=linux CGO_ENABLED=1 GOARCH=amd64
         cd $DirRoot && go build -ldflags "-s -w" -o "$DirRoot/bin/$Target"
     ;; 
     w|windows)
