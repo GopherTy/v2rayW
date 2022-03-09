@@ -12,7 +12,7 @@
 
 > 注意：若需要打包 view 视图模块到 go 中需要安装 statik。前端在 `v2rayW-view` 项目中。
 >
-> 安装命令: go get github.com/rakyll/statik @v0.1.7
+> 安装命令: go install github.com/rakyll/statik @v0.1.7
 
 2.运行对应平台的可执行文件即可使用。若需要自定义配置项目启动环境，打开 bin 文件夹下的 `config.json`  文件进行配置。配置说明如下：
 

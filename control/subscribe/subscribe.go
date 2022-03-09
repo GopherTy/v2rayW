@@ -38,7 +38,7 @@ func (Dispatcher) ListSubscribeURL(c *gin.Context) {
 	}
 
 	var content []proxy.Subscribe
-	err = db.Engine().Where("user_id = ?", params.UID).Find(&content)
+	err = db.Engine().Find(&content)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -73,7 +73,6 @@ func (Dispatcher) AddSubscribeURL(c *gin.Context) {
 	}
 
 	subscribe := &proxy.Subscribe{
-		UID:  uint64(params.UID),
 		Name: params.Name,
 		URL:  params.URL,
 	}
@@ -145,7 +144,6 @@ func (Dispatcher) UpdateSubscribeURL(c *gin.Context) {
 
 	_, err = db.Engine().AllCols().Where(" id = ?", params.ID).Update(&proxy.Subscribe{
 		Name: params.Name,
-		UID:  uint64(params.UID),
 		URL:  params.URL,
 	})
 	if err != nil {
@@ -168,7 +166,6 @@ func (Dispatcher) UpdateSubscribeURL(c *gin.Context) {
 // 支持服务提供商 vmess 协议格式 和 v2ray协议 vless 格式配置
 func (Dispatcher) SubscribeProxyProtocol(c *gin.Context) {
 	var params struct {
-		UID int    `json:"uid"`
 		URL string `json:"url" `
 	}
 	err := c.ShouldBind(&params)
@@ -182,7 +179,7 @@ func (Dispatcher) SubscribeProxyProtocol(c *gin.Context) {
 		return
 	}
 
-	vlesss, vmesss, sockss, sss, err := subscribe(params.UID, params.URL)
+	vlesss, vmesss, sockss, sss, err := subscribe(params.URL)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -204,8 +201,7 @@ func (Dispatcher) SubscribeProxyProtocol(c *gin.Context) {
 	})
 }
 
-func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vmess, sockss []proxy.Socks, sss []proxy.Shadowsocks, err error) {
-
+func subscribe(urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vmess, sockss []proxy.Socks, sss []proxy.Shadowsocks, err error) {
 	resp, err := http.Get(urlAddr)
 	if err != nil {
 		return
@@ -293,7 +289,6 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 			}
 
 			jsonData, err = parser.ParseData(ptl.Parameter{
-				UID:         uid,
 				Protocol:    "vmess",
 				Name:        vms.Ps,
 				Address:     vms.Add,
@@ -313,7 +308,6 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 			}
 
 			proVmess := proxy.Vmess{
-				UID:         uint64(uid),
 				Protocol:    "vmess",
 				Name:        vms.Ps,
 				Address:     vms.Add,
@@ -350,7 +344,6 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 			}
 
 			jsonData, err = parser.ParseData(ptl.Parameter{
-				UID:         uid,
 				Protocol:    "vless",
 				Name:        vls.Ps,
 				Address:     vls.Add,
@@ -369,7 +362,6 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 			}
 
 			proVless := proxy.Vless{
-				UID:      uint64(uid),
 				Protocol: "vless",
 				Name:     vls.Ps,
 				Address:  vls.Add,
@@ -399,7 +391,6 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 			vlesss = append(vlesss, proVless)
 		case "SOCKS":
 			jsonData, err = parser.ParseData(ptl.Parameter{
-				UID:       uid,
 				Protocol:  "socks",
 				Name:      name,
 				Address:   serverCnf[0],
@@ -413,7 +404,6 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 			}
 
 			socks := proxy.Socks{
-				UID:        uint64(uid),
 				Protocol:   "socks",
 				Name:       name,
 				Address:    serverCnf[0],
@@ -439,7 +429,6 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 		case "SS":
 			var jsonData []byte
 			jsonData, err = parser.ParseData(ptl.Parameter{
-				UID:       uid,
 				Protocol:  "shadowsocks",
 				Name:      name,
 				Address:   serverCnf[0],
@@ -453,7 +442,6 @@ func subscribe(uid int, urlAddr string) (vlesss []proxy.Vless, vmesss []proxy.Vm
 			}
 
 			shadowsocks := proxy.Shadowsocks{
-				UID:        uint64(uid),
 				Protocol:   "shadowsocks",
 				Name:       name,
 				Address:    serverCnf[0],

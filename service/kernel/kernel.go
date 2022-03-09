@@ -102,8 +102,6 @@ func (k *Kernel) Start(data []byte, status Status) (err error) {
 			// 若打开多个网页时，同时推送输出日志
 			k.logger.Publish(logs)
 		}
-
-		k.logger.Complete()
 	}()
 
 	// publish kernel running status

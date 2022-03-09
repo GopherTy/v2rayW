@@ -35,7 +35,7 @@ func (Dispatcher) ListProxyProtocols(c *gin.Context) {
 	engine := db.Engine()
 
 	var v2rays []proxy.Vmess
-	err = engine.Where("user_id = ?", params["uid"]).Find(&v2rays)
+	err = engine.Find(&v2rays)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -47,7 +47,7 @@ func (Dispatcher) ListProxyProtocols(c *gin.Context) {
 	}
 
 	var vless []proxy.Vless
-	err = engine.Where("user_id = ?", params["uid"]).Find(&vless)
+	err = engine.Find(&vless)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -59,7 +59,7 @@ func (Dispatcher) ListProxyProtocols(c *gin.Context) {
 	}
 
 	var socks []proxy.Socks
-	err = engine.Where("user_id = ?", params["uid"]).Find(&socks)
+	err = engine.Find(&socks)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -71,7 +71,7 @@ func (Dispatcher) ListProxyProtocols(c *gin.Context) {
 	}
 
 	var shadowsocks []proxy.Shadowsocks
-	err = engine.Where("user_id = ?", params["uid"]).Find(&shadowsocks)
+	err = engine.Find(&shadowsocks)
 	if err != nil {
 		logger.Logger().Error(err.Error())
 		c.JSON(http.StatusInternalServerError, model.BackToFrontEndData{
@@ -133,6 +133,7 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 			})
 			return
 		}
+		params.Name = "剪贴板导入"
 		v2rayCnf = data
 	} else {
 		data, err := NewParser().ParseData(params)
@@ -154,7 +155,6 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 	switch strings.ToUpper(params.Protocol) {
 	case Vmess:
 		vmess := &proxy.Vmess{
-			UID:         uint64(params.UID),
 			Name:        params.Name,
 			Protocol:    params.Protocol,
 			Address:     params.Address,
@@ -183,7 +183,6 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 		id = vmess.ID
 	case Vless:
 		vless := &proxy.Vless{
-			UID:      uint64(params.UID),
 			Name:     params.Name,
 			Protocol: params.Protocol,
 			Address:  params.Address,
@@ -212,7 +211,6 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 		id = vless.ID
 	case Socks:
 		socks := &proxy.Socks{
-			UID:        uint64(params.UID),
 			Name:       params.Name,
 			Protocol:   params.Protocol,
 			Address:    params.Address,
@@ -235,7 +233,6 @@ func (Dispatcher) AddProxyProtocol(c *gin.Context) {
 		id = socks.ID
 	case ShadowSocks:
 		shadowsocks := &proxy.Shadowsocks{
-			UID:        uint64(params.UID),
 			Name:       params.Name,
 			Protocol:   params.Protocol,
 			Address:    params.Address,
@@ -531,8 +528,9 @@ func (Dispatcher) ClearProxyProtocol(c *gin.Context) {
 		}
 	}()
 
-	_, err = session.Delete(&proxy.Vless{UID: uint64(params.UID)})
-	_, err = session.Delete(&proxy.Vmess{UID: uint64(params.UID)})
-	_, err = session.Delete(&proxy.Socks{UID: uint64(params.UID)})
-	_, err = session.Delete(&proxy.Shadowsocks{UID: uint64(params.UID)})
+	// clear all proxy
+	_, err = session.Where("1=1").Delete(&proxy.Vless{})
+	_, err = session.Where("1=1").Delete(&proxy.Vmess{})
+	_, err = session.Where("1=1").Delete(&proxy.Socks{})
+	_, err = session.Where("1=1").Delete(&proxy.Shadowsocks{})
 }

@@ -3,7 +3,6 @@ package subscribe
 // SubcribeParams 订阅协议参数
 type SubcribeParams struct {
 	ID   int    `json:"id"`
-	UID  int    `json:"uid"`
 	Name string `json:"name"`
 	URL  string `json:"url"`
 }

@@ -3,8 +3,6 @@ package proxy
 // Vmess   vmess 协议表
 type Vmess struct {
 	ID uint64 `xorm:"pk  autoincr 'id' BIGINT"`
-	// 用户 id，用于区分是哪个用户的协议。
-	UID uint64 `xorm:"notnull 'user_id' BIGINT"`
 
 	Name     string `xorm:"'name' VARCHAR(255)"`
 	Protocol string `xorm:"notnull  comment('协议名称')  default('vmess')  'protocol' VARCHAR(255)"`

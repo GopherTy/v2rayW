@@ -34,8 +34,7 @@ type DataBase struct {
 	MaxOpenConns int // 数据库连接池数量
 	MaxIdleConns int // 数据库连接最大空闲数
 
-	Cached            int  // 缓存大小
-	UserManageDisable bool // 是否开启用户管理
+	Cached int // 缓存大小
 }
 
 // Logger 日志对象

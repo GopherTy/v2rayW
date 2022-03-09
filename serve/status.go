@@ -7,5 +7,4 @@ const (
 	StatusDBError         = 2 // StatusDBServerError 与数据库相关的错误
 	StatusParamNotMatched = 3 // StatusParamNotMatched 客户端与服务器参数结构不匹配
 	StatusV2rayError      = 4 // StatusV2rayError 与 v2ray 服务相关的错误。
-	StatusUnauthorized    = 5 // StatusUnauthorized token过期
 )

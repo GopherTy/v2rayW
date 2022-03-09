@@ -10,8 +10,6 @@ const (
 
 // Parameter 前后端交互参数
 type Parameter struct {
-	UID int `json:"uId"` // 登录用户的 id
-
 	ID       int    `json:"id"`       // 协议 id
 	Protocol string `json:"protocol"` // 协议名称
 

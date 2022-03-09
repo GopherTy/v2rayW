@@ -5,8 +5,7 @@
         "ShowSQL": false,
         "MaxOpenConns": 100,
         "MaxIdleConns": 5,
-        "Cached": 200,
-        "UserManageDisable": false
+        "Cached": 200
     },
     "HTTP": {
         "TLS": false,
