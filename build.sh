@@ -25,6 +25,7 @@ function buildView(){
 
 # macOS 跨平台编译安装对应平台依赖后进行打包
 # linux brew install FiloSottile/musl-cross/musl-cross 注：mac m1 不支持
+# linux CC=x86_64-unknown-linux-gnu-gcc CXX=x86_64-unknown-linux-gnu-g++
 # macOS 跨平台编译链 https://github.com/messense/homebrew-macos-cross-toolchains
 # windows brew install mingw-w64
 case $1 in 
@@ -32,8 +33,7 @@ case $1 in
         buildView $2 
     ;;
     l|linux)
-        # 仅用于mac跨平台编译
-        export GOOS=linux CGO_ENABLED=1 GOARCH=amd64 CC=x86_64-unknown-linux-gnu-gcc CXX=x86_64-unknown-linux-gnu-g++
+        export GOOS=linux CGO_ENABLED=1 GOARCH=amd64
         cd $DirRoot && go build -ldflags "-s -w" -o "$DirRoot/bin/$Target"
     ;; 
     w|windows)
