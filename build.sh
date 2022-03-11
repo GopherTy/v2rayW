@@ -7,8 +7,9 @@ TestItems=()
 
 function manual(){
     echo "usage  example:  
-            step1:  ./build.sh s  view  
-                build view to go file(先将静态资源打包到go中) 
+            先将 v2rayW-view 打包出来后将资源移动至 assets 目录下在按步骤执行
+            step1:  ./build.sh s  view
+                build view to go file(先将静态资源打包到go中)
             step2: ./build.sh l 
                 build for linux(编译到linux平台)"
     echo "l/linux           build for linux(编译到linux)"
