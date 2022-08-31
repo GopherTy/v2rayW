@@ -3,7 +3,6 @@
 # root directory $BASH_SOURCE 变量在脚本文件中可以显示脚本的路径，但是在 shell 命令行中什么都不会输出。
 DirRoot=`cd $(dirname $BASH_SOURCE) && pwd`
 Target=v2rayW
-TestItems=()
 
 function manual(){
     echo "usage  example:  
@@ -45,11 +44,8 @@ case $1 in
         export GOOS=darwin CGO_ENABLED=1 GOARCH=amd64
     	cd $DirRoot && go build -ldflags "-s -w"  -o "$DirRoot/bin/$Target"
     ;;
-    t|test)
-        for i in ${!TestItems[@]}
-        do 
-            cd "$DirRoot/${TestItems[i]}" && go test
-        done
+    up|upgrade)
+        go get
     ;;
     *)
         manual

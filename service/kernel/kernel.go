@@ -15,7 +15,7 @@ import (
 
 	"github.com/gopherty/v2rayW/utils"
 
-	core "github.com/v2fly/v2ray-core/v4"
+	core "github.com/v2fly/v2ray-core/v5"
 )
 
 type Kernel struct {
@@ -205,7 +205,7 @@ func (k *Kernel) loadConfig(data []byte) (err error) {
 	}
 	defer file.Close()
 
-	cnf, err := core.LoadConfig("json", path, file)
+	cnf, err := core.LoadConfig("json", file)
 	if err != nil {
 		return
 	}

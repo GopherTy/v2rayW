@@ -8,7 +8,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	// v2ray core 启动的依赖
-	_ "github.com/v2fly/v2ray-core/v4/main/distro/all"
+	_ "github.com/v2fly/v2ray-core/v5/main/distro/all"
 
 	"github.com/gopherty/v2rayW/config"
 	"github.com/gopherty/v2rayW/initialization"
