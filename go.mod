@@ -3,7 +3,7 @@ module github.com/gopherty/v2rayW
 go 1.16
 
 require (
-	github.com/gin-gonic/gin v1.7.7
+	github.com/gin-gonic/gin v1.9.1
 	github.com/go-xorm/xorm v0.7.9
 	github.com/gopherty/broadcaster v1.0.0
 	github.com/gorilla/websocket v1.4.2
